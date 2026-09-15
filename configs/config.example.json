@@ -27,11 +27,81 @@
       "parameters": { "application": "WhatsApp" }
     },
     {
+      "id": "app.finder",
+      "label": "Finder",
+      "icon": "folder",
+      "kind": "open_app",
+      "parameters": { "application": "Finder" }
+    },
+    {
+      "id": "app.terminal",
+      "label": "Terminal",
+      "icon": "terminal",
+      "kind": "open_app",
+      "parameters": { "application": "Terminal" }
+    },
+    {
+      "id": "app.spotify",
+      "label": "Spotify",
+      "icon": "music",
+      "kind": "open_app",
+      "parameters": { "application": "Spotify" }
+    },
+    {
+      "id": "app.vscode",
+      "label": "Visual Studio Code",
+      "icon": "code",
+      "kind": "open_app",
+      "parameters": { "application": "Visual Studio Code" }
+    },
+    {
+      "id": "app.screenshot",
+      "label": "Captura de tela",
+      "icon": "camera",
+      "kind": "keystroke",
+      "parameters": { "key": "4", "modifiers": ["cmd", "shift"] }
+    },
+    {
+      "id": "shortcut.work",
+      "label": "Modo trabalho",
+      "icon": "briefcase-business",
+      "kind": "run_shortcut",
+      "parameters": { "shortcut": "Modo Trabalho" }
+    },
+    {
+      "id": "media.spotify.previous",
+      "label": "Música anterior",
+      "icon": "skip-back",
+      "kind": "spotify_control",
+      "parameters": { "operation": "previous" }
+    },
+    {
       "id": "media.spotify.playpause",
       "label": "Play/Pause",
       "icon": "play-pause",
       "kind": "spotify_control",
       "parameters": { "operation": "play_pause" }
+    },
+    {
+      "id": "media.spotify.next",
+      "label": "Próxima música",
+      "icon": "skip-forward",
+      "kind": "spotify_control",
+      "parameters": { "operation": "next" }
+    },
+    {
+      "id": "system.mute",
+      "label": "Silenciar",
+      "icon": "volume-x",
+      "kind": "mute_toggle",
+      "parameters": {}
+    },
+    {
+      "id": "volume.down",
+      "label": "Volume -",
+      "icon": "volume-1",
+      "kind": "volume_delta",
+      "parameters": { "delta": -5 }
     },
     {
       "id": "volume.up",
@@ -41,11 +111,18 @@
       "parameters": { "delta": 5 }
     },
     {
-      "id": "shortcut.work",
-      "label": "Modo trabalho",
-      "icon": "briefcase-business",
-      "kind": "run_shortcut",
-      "parameters": { "shortcut": "Modo Trabalho" }
+      "id": "system.display_sleep",
+      "label": "Apagar monitor",
+      "icon": "monitor-off",
+      "kind": "display_sleep",
+      "parameters": {}
+    },
+    {
+      "id": "system.lock",
+      "label": "Bloquear Mac",
+      "icon": "lock",
+      "kind": "screen_lock",
+      "parameters": {}
     }
   ]
 }

@@ -29,6 +29,10 @@ export default [
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      // TypeScript já cobre identificadores/tipos não definidos (inclusive tipos
+      // ambientes de libs DOM como RequestInit); no-undef do ESLint não
+      // enxerga esses tipos e gera falsos positivos.
+      "no-undef": "off",
     },
   },
 ];

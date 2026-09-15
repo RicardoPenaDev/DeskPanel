@@ -1,17 +1,43 @@
-import { PROTOCOL_VERSION } from "../protocol/messages";
+// Casca do painel: escolhe entre a tela de pareamento (PROJECT.md
+// §10.2-A) e o painel principal (§10.2-B) conforme o estado de conexão
+// vindo de useDeskPanelConnection. As Fases 4/5/6 acrescentam editor,
+// instalação real e polimento — este componente não antecipa nenhuma
+// delas.
 
-// Casca inicial do painel. As telas reais (primeiro acesso, painel
-// principal, editor, configurações — PROJECT.md §10.2) chegam nas Fases
-// 3 e 4; por enquanto isto só confirma que o app builda e roda.
+import { useDeskPanelConnection } from "../features/connection/useDeskPanelConnection";
+import PairingScreen from "../features/pairing/PairingScreen";
+import DashboardScreen from "../features/dashboard/DashboardScreen";
+
 export default function App() {
-  return (
-    <main style={{ display: "grid", placeItems: "center", height: "100%" }}>
-      <div style={{ textAlign: "center" }}>
+  const connection = useDeskPanelConnection();
+
+  if (connection.phase === "loading" || !connection.connectionConfig || !connection.layout) {
+    return (
+      <main className="dp-splash">
         <h1>DeskPanel</h1>
-        <p style={{ color: "var(--dp-muted)" }}>
-          Fase 0 — esqueleto do painel. Protocolo v{PROTOCOL_VERSION}.
-        </p>
-      </div>
-    </main>
+        <p className="dp-muted">Carregando…</p>
+      </main>
+    );
+  }
+
+  if (connection.phase === "pairing") {
+    return (
+      <PairingScreen
+        initialConfig={connection.connectionConfig}
+        testConnection={connection.testConnection}
+        pair={connection.pair}
+        connectionError={connection.connectionError}
+      />
+    );
+  }
+
+  return (
+    <DashboardScreen
+      layout={connection.layout}
+      actionsCatalog={connection.actionsCatalog}
+      status={connection.status}
+      macName={connection.macName}
+      executeAction={connection.executeAction}
+    />
   );
 }

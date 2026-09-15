@@ -76,3 +76,24 @@ Decisão:
 Consequências:
 - Qualquer diretório de dados do agente (`config.json`, `devices.json`, `agent.sock`) que já exista com permissão mais aberta que 0700 é corrigido automaticamente na primeira escrita — não basta confiar em `MkdirAll`, que não reajusta permissão de diretório pré-existente.
 - `serve` precisa estar rodando para `pair`/`devices`/`revoke`/`status` funcionarem; sem ele, a CLI retorna um erro claro em vez de falhar silenciosamente.
+
+---
+
+## ADR-0004 — Armazenamento do token no Android (plugin Capacitor local) e "keep awake"
+Data: 2026-09-15
+Status: aceita
+
+Contexto:
+`PROJECT.md` §10.3/§12.8 exige que o token de acesso fique protegido pelo Android Keystore, nunca em `localStorage`, Capacitor Preferences, arquivo ou log. A API `Preferences` do Capacitor não é armazenamento seguro. Não há plugin oficial do Capacitor 6 para Keystore; os plugins de terceiros disponíveis não são auditáveis dentro deste projeto. `PROJECT.md` §10.1 também exige manter a tela ativa enquanto o painel estiver em primeiro plano.
+
+Decisão:
+- Token: plugin Capacitor **local** (não publicado como pacote separado) — `SecureTokenStoragePlugin.java`, registrado diretamente em `MainActivity.java` via `registerPlugin(...)`. Usa `androidx.security.crypto.EncryptedSharedPreferences` (`androidx.security:security-crypto:1.1.0-alpha06`, adicionada em `android/app/build.gradle`) com uma entrada por `deviceId`. Escrito em Java (não Kotlin) para não introduzir o toolchain Kotlin no projeto gerado pelo `cap add android`, que só tinha suporte a Java configurado.
+- No lado TypeScript, `src/services/secureTokenStorage.ts` expõe a interface do plugin via `registerPlugin` do `@capacitor/core`, com fallback web (`secureTokenStorageWeb.ts`) só para `pnpm dev`/testes — esse fallback guarda o token em memória, sem persistência, e nunca deve rodar em produção (o app real roda sempre dentro do WebView Android).
+- Preferências não secretas (IP/porta/nome do dispositivo, layout do painel) continuam via `@capacitor/preferences` (`storage/connectionConfig.ts`, `storage/layoutStorage.ts`), separado do token por desenho — nenhum dos dois módulos jamais lida com o token.
+- "Keep awake": em vez de adicionar uma dependência (`@capacitor/keep-awake` ou similar), a tela é mantida ativa com `WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON` direto em `MainActivity.onCreate`, já que este é um dispositivo dedicado ao painel (nenhuma tela concorrente a proteger da tela sempre ligada).
+- Orientação: `android:screenOrientation="landscape"` fixado em `AndroidManifest.xml` (além do `configChanges` já presente desde a Fase 0).
+
+Consequências:
+- `SecureTokenStoragePlugin.java`, a dependência `androidx.security:security-crypto` e as mudanças em `MainActivity.java`/`AndroidManifest.xml` **não puderam ser compiladas nem testadas neste ambiente** (sandbox sem Android SDK/Gradle — mesma limitação já registrada desde a Fase 0). A validação real só acontece na Fase 5, com Gradle de verdade no Mac do usuário e teste físico no Moto G60.
+- O lado TypeScript do plugin (`secureTokenStorage.ts`, `secureTokenStorageWeb.ts`) é testado normalmente com Vitest, mockando `@capacitor/core`.
+- Se o plugin nativo falhar ao compilar no Mac real, o sintoma mais provável é erro de resolução de `androidx.security:security-crypto` — conferir se `google()` está nos repositórios do projeto (já está, herdado do `cap add android`).
