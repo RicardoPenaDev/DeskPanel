@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ButtonColor } from "../storage/layout";
+import Icon from "./Icon";
 
 export type DashboardButtonVisualState = "idle" | "pressed" | "running" | "success" | "error";
 
@@ -16,6 +17,7 @@ export interface ActivateOutcome {
 
 export interface DashboardButtonProps {
   label: string;
+  icon?: string;
   color?: ButtonColor;
   requireLongPress: boolean;
   unavailable?: boolean;
@@ -28,6 +30,7 @@ const ERROR_RESET_MS = 1800;
 
 export default function DashboardButton({
   label,
+  icon,
   color = "neutral",
   requireLongPress,
   unavailable = false,
@@ -113,6 +116,7 @@ export default function DashboardButton({
       aria-label={label}
       aria-disabled={unavailable}
     >
+      <Icon name={icon} className="dp-button__icon" />
       <span className="dp-button__label">{label}</span>
       {requireLongPress && state === "idle" && <span className="dp-button__hint">segure</span>}
       {state === "running" && (

@@ -97,3 +97,24 @@ Consequências:
 - `SecureTokenStoragePlugin.java`, a dependência `androidx.security:security-crypto` e as mudanças em `MainActivity.java`/`AndroidManifest.xml` **não puderam ser compiladas nem testadas neste ambiente** (sandbox sem Android SDK/Gradle — mesma limitação já registrada desde a Fase 0). A validação real só acontece na Fase 5, com Gradle de verdade no Mac do usuário e teste físico no Moto G60.
 - O lado TypeScript do plugin (`secureTokenStorage.ts`, `secureTokenStorageWeb.ts`) é testado normalmente com Vitest, mockando `@capacitor/core`.
 - Se o plugin nativo falhar ao compilar no Mac real, o sintoma mais provável é erro de resolução de `androidx.security:security-crypto` — conferir se `google()` está nos repositórios do projeto (já está, herdado do `cap add android`).
+
+---
+
+## ADR-0005 — Editor do painel: reorganizar por toque, ícones locais, trava de segurança e backup de layout
+Data: 2026-09-15
+Status: aceita
+
+Contexto:
+`PROJECT.md` §17 (Fase 4) e §10.2-C pedem um editor com: reorganizar botões "por arrastar e soltar"; trocar ícone "dentre os ícones empacotados"; marcar uma ação como perigosa para exigir toque prolongado; persistência com migração de schema; e o §17 exige que "config corrompida usa backup ou padrão sem travar". Nenhum desses itens tinha uma implementação prévia (Fase 3 só tinha o layout padrão fixo, sem editor).
+
+Decisão:
+- **Reorganizar**: em vez de arrastar-e-soltar via HTML5 Drag and Drop (historicamente pouco confiável em WebViews Android por toque), o editor usa um modo "Reorganizar botões" com interação de tocar-para-selecionar / tocar-para-trocar: o usuário toca em um botão para selecioná-lo, depois toca no destino (vazio ou ocupado) para mover ou trocar. É mais confiável em touch, mais simples de testar (sem simular gestos de arrastar em jsdom) e cumpre a mesma função (reorganizar a grade) pedida pelo `PROJECT.md`.
+- **Ícones**: pacote local mínimo (`components/Icon.tsx`), ~17 formas SVG desenhadas à mão, sem nenhuma dependência externa — chaves alinhadas com o campo `icon` já usado em `configs/config.example.json`. Resolve tanto §10.1 ("ícones empacotados localmente") quanto a entrega da Fase 4 ("trocar ícone dentre os ícones empacotados"), que antes só existia como texto no `STATUS.md` ("placeholder").
+- **Trava de segurança**: uma ação cujo `kind` no agente exige toque prolongado (`screen_lock`, `display_sleep` — `ActionSummary.requireLongPress === true`) não pode ter esse requisito destravado pelo editor. O checkbox "Exigir toque prolongado" fica marcado e desabilitado nesse caso; o editor só permite ao usuário **adicionar** a exigência a uma ação que originalmente não teria (endurecer, nunca afrouxar). Isso é reforçado em duas camadas: `EditorScreen` força `requireLongPress: true` ao salvar, e `DashboardScreen` (Fase 3) já fazia um OR entre `button.requireLongPress` e `catalogAction.requireLongPress` ao renderizar — então mesmo um bug futuro no editor não bypassaria a exigência de toque prolongado na tela real.
+- **Persistência/backup/migração**: `storage/layoutStorage.ts` agora mantém uma segunda chave de backup (`deskpanel.layout.backup`), promovida só depois de uma gravação válida bem-sucedida. Ao carregar: cópia principal válida → usa; senão cópia de backup válida → usa; senão layout padrão. `CURRENT_SCHEMA_VERSION = 1` é o único aceito hoje; um schemaVersion futuro entra como um novo caso de migração sem mexer no resto do módulo — não inventamos uma v2 fictícia agora.
+- Páginas/botões continuam usando só o perfil único `"default"` (`PROJECT.md` não pede múltiplos perfis na Fase 4) — criar/excluir afeta só `profiles[0].pages`.
+
+Consequências:
+- Se o toque-para-reorganizar se mostrar pouco intuitivo no teste físico do Moto G60 (Fase 5), trocar para arrastar-e-soltar de verdade é uma mudança isolada em `EditorScreen`/`DashboardButton`, sem impacto em armazenamento ou protocolo.
+- O conjunto de 17 ícones é deliberadamente pequeno; um pacote maior/mais bonito fica para a Fase 6 (polimento), mas já não há mais placeholder de texto puro nos botões.
+- Um `schemaVersion` novo exigirá escrever a função de migração real quando o formato realmente mudar — o "seam" já existe, a migração em si não.

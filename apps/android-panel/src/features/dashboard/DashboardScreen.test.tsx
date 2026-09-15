@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import DashboardScreen from "./DashboardScreen";
 import { defaultDashboardConfig } from "../../storage/defaultLayout";
+import type { DashboardConfig } from "../../storage/layout";
 import type { ActionSummary } from "../../protocol/httpClient";
 
 function catalogWith(ids: string[]): Record<string, ActionSummary> {
@@ -18,8 +19,12 @@ function catalogWith(ids: string[]): Record<string, ActionSummary> {
   return catalog;
 }
 
+function grid() {
+  return screen.getByRole("main").querySelector(".dp-dashboard__grid") as HTMLElement;
+}
+
 describe("DashboardScreen", () => {
-  it("renderiza a grade 4x2 da primeira página com 8 botões", () => {
+  it("renderiza a grade 4x2 da primeira página com 8 botões de ação", () => {
     const layout = defaultDashboardConfig();
     render(
       <DashboardScreen
@@ -28,10 +33,11 @@ describe("DashboardScreen", () => {
         status="connected"
         macName="MacBook de Ricardo"
         executeAction={vi.fn()}
+        onOpenEditor={vi.fn()}
       />,
     );
 
-    expect(screen.getAllByRole("button")).toHaveLength(8);
+    expect(within(grid()).getAllByRole("button")).toHaveLength(8);
     expect(screen.getByText("MacBook de Ricardo")).toBeInTheDocument();
   });
 
@@ -44,6 +50,7 @@ describe("DashboardScreen", () => {
         status="connected"
         macName="Mac"
         executeAction={vi.fn()}
+        onOpenEditor={vi.fn()}
       />,
     );
 
@@ -67,6 +74,7 @@ describe("DashboardScreen", () => {
         status="connected"
         macName="Mac"
         executeAction={executeAction}
+        onOpenEditor={vi.fn()}
       />,
     );
 
@@ -86,6 +94,7 @@ describe("DashboardScreen", () => {
         status="connected"
         macName="Mac"
         executeAction={vi.fn()}
+        onOpenEditor={vi.fn()}
       />,
     );
 
@@ -107,6 +116,7 @@ describe("DashboardScreen", () => {
         status="connected"
         macName="Mac"
         executeAction={vi.fn()}
+        onOpenEditor={vi.fn()}
       />,
     );
 
@@ -115,5 +125,89 @@ describe("DashboardScreen", () => {
     fireEvent.touchEnd(main, { changedTouches: [{ clientX: 280 }] });
 
     expect(screen.getByText(layout.profiles[0].pages[0].name)).toBeInTheDocument();
+  });
+
+  it("abre o editor ao clicar em 'Editar'", () => {
+    const onOpenEditor = vi.fn();
+    render(
+      <DashboardScreen
+        layout={defaultDashboardConfig()}
+        actionsCatalog={{}}
+        status="connected"
+        macName="Mac"
+        executeAction={vi.fn()}
+        onOpenEditor={onOpenEditor}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+    expect(onOpenEditor).toHaveBeenCalledTimes(1);
+  });
+
+  describe("toque prolongado em slot vazio", () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("abre o editor após 600ms de toque prolongado em um slot vazio", () => {
+      const onOpenEditor = vi.fn();
+      const layout: DashboardConfig = defaultDashboardConfig();
+      // esvazia a segunda página para ter slots vazios visíveis
+      layout.profiles[0].pages[1].buttons = [];
+
+      render(
+        <DashboardScreen
+          layout={layout}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={onOpenEditor}
+        />,
+      );
+
+      const main = screen.getByRole("main");
+      fireEvent.touchStart(main, { touches: [{ clientX: 300 }] });
+      fireEvent.touchEnd(main, { changedTouches: [{ clientX: 20 }] });
+
+      const emptySlot = grid().querySelector(".dp-dashboard__empty-slot") as HTMLElement;
+      fireEvent.pointerDown(emptySlot);
+      vi.advanceTimersByTime(650);
+
+      expect(onOpenEditor).toHaveBeenCalledTimes(1);
+    });
+
+    it("não abre o editor se soltar o slot vazio antes de 600ms", () => {
+      const onOpenEditor = vi.fn();
+      const layout: DashboardConfig = defaultDashboardConfig();
+      layout.profiles[0].pages[1].buttons = [];
+
+      render(
+        <DashboardScreen
+          layout={layout}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={onOpenEditor}
+        />,
+      );
+
+      const main = screen.getByRole("main");
+      fireEvent.touchStart(main, { touches: [{ clientX: 300 }] });
+      fireEvent.touchEnd(main, { changedTouches: [{ clientX: 20 }] });
+
+      const emptySlot = grid().querySelector(".dp-dashboard__empty-slot") as HTMLElement;
+      fireEvent.pointerDown(emptySlot);
+      vi.advanceTimersByTime(300);
+      fireEvent.pointerUp(emptySlot);
+      vi.advanceTimersByTime(400);
+
+      expect(onOpenEditor).not.toHaveBeenCalled();
+    });
   });
 });

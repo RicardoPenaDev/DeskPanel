@@ -36,6 +36,12 @@ function makeDeps(overrides: Partial<DeskPanelConnectionDeps> = {}) {
       activeProfileId: "default",
       profiles: [],
     })),
+    saveLayout: vi.fn(async () => {}),
+    resetLayout: vi.fn(async () => ({
+      schemaVersion: 1 as const,
+      activeProfileId: "default",
+      profiles: [],
+    })),
     checkHealth: vi.fn(async () => ({
       ok: true as const,
       data: { status: "ok", service: "deskpanel-agent", protocolVersion: 1 },
@@ -225,5 +231,42 @@ describe("useDeskPanelConnection", () => {
 
     await waitFor(() => expect(result.current.phase).toBe("pairing"));
     expect(result.current.connectionError).toBe("dispositivo revogado");
+  });
+
+  it("updateLayout salva e atualiza o layout em memória", async () => {
+    const { deps } = makeDeps();
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("pairing"));
+
+    const novoLayout = {
+      schemaVersion: 1 as const,
+      activeProfileId: "default",
+      profiles: [{ id: "default", name: "Padrão", pages: [] }],
+    };
+
+    await act(async () => {
+      await result.current.updateLayout(novoLayout);
+    });
+
+    expect(deps.saveLayout).toHaveBeenCalledWith(novoLayout);
+    expect(result.current.layout).toEqual(novoLayout);
+  });
+
+  it("resetLayoutToDefault chama deps.resetLayout e atualiza o layout em memória", async () => {
+    const layoutPadrao = {
+      schemaVersion: 1 as const,
+      activeProfileId: "default",
+      profiles: [{ id: "default", name: "Padrão", pages: [] }],
+    };
+    const { deps } = makeDeps({ resetLayout: vi.fn(async () => layoutPadrao) });
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("pairing"));
+
+    await act(async () => {
+      await result.current.resetLayoutToDefault();
+    });
+
+    expect(deps.resetLayout).toHaveBeenCalledTimes(1);
+    expect(result.current.layout).toEqual(layoutPadrao);
   });
 });

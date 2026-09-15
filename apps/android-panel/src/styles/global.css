@@ -278,3 +278,282 @@ body {
 .dp-button--purple {
   border-color: #b17ef0;
 }
+
+/* --- Editor do painel (PROJECT.md §10.2-C, Fase 4) ---------------------- */
+
+.dp-editor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  overflow-y: auto;
+}
+
+.dp-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dp-editor__header h1 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.dp-editor__pages {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dp-editor__page-tab-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dp-editor__page-tab {
+  border: 1px solid #2a2f36;
+  background: var(--dp-surface);
+  color: var(--dp-muted);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.dp-editor__page-tab--active {
+  color: var(--dp-text);
+  border-color: var(--dp-accent);
+}
+
+.dp-editor__page-delete {
+  border: none;
+  background: transparent;
+  color: var(--dp-danger);
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.dp-editor__page-add {
+  border: 1px dashed #2a2f36;
+  background: transparent;
+  color: var(--dp-muted);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.dp-editor__toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dp-editor__toolbar button {
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid #2a2f36;
+  background: var(--dp-surface);
+  color: var(--dp-text);
+  padding: 0 12px;
+  font-size: 0.85rem;
+}
+
+.dp-editor__reorder-toggle--active {
+  border-color: var(--dp-accent);
+  color: var(--dp-accent);
+}
+
+.dp-editor__hint {
+  font-size: 0.8rem;
+}
+
+.dp-editor__confirm {
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-danger);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.85rem;
+}
+
+.dp-editor__confirm-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.dp-editor__confirm-actions button {
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid #2a2f36;
+  background: var(--dp-bg);
+  color: var(--dp-text);
+  padding: 0 12px;
+}
+
+.dp-editor__grid {
+  display: grid;
+  gap: 8px;
+  min-height: 200px;
+}
+
+.dp-editor__slot {
+  min-height: 48px;
+  border-radius: 10px;
+  border: 1px dashed #2a2f36;
+  background: var(--dp-surface);
+  color: var(--dp-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  padding: 6px;
+}
+
+.dp-editor__slot--empty {
+  border-style: dashed;
+  color: var(--dp-muted);
+}
+
+.dp-editor__slot--selected {
+  border-color: var(--dp-accent);
+  border-style: solid;
+}
+
+.dp-editor__panel {
+  background: var(--dp-surface);
+  border: 1px solid #2a2f36;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dp-editor__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.dp-editor__icon-grid,
+.dp-editor__color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dp-editor__icon-option {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid #2a2f36;
+  background: var(--dp-bg);
+  color: var(--dp-text);
+}
+
+.dp-editor__icon-option--active {
+  border-color: var(--dp-accent);
+}
+
+.dp-editor__color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--dp-surface);
+}
+
+.dp-editor__color-swatch--active {
+  border-color: var(--dp-text);
+}
+
+.dp-editor__remove-button {
+  min-height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--dp-danger);
+  background: transparent;
+  color: var(--dp-danger);
+}
+
+.dp-editor__error {
+  color: var(--dp-danger);
+  font-size: 0.8rem;
+}
+
+.dp-field--checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.dp-field select {
+  font-size: 1rem;
+  color: var(--dp-text);
+  background: var(--dp-surface);
+  border: 1px solid #2a2f36;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 44px;
+}
+
+/* --- Botão do painel: ícone + botão "Editar" no cabeçalho --------------- */
+
+.dp-button__icon {
+  color: inherit;
+}
+
+.dp-dashboard__edit-button {
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid #2a2f36;
+  background: var(--dp-surface);
+  color: var(--dp-text);
+  padding: 0 12px;
+  font-size: 0.8rem;
+}
+
+.dp-dashboard__empty-slot {
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px dashed #2a2f36;
+}
+
+/* --- Lista de ações (ActionPicker) -------------------------------------- */
+
+.dp-action-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.dp-action-picker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dp-action-picker__list button {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  border: 1px solid #2a2f36;
+  background: var(--dp-bg);
+  color: var(--dp-text);
+  padding: 0 12px;
+}

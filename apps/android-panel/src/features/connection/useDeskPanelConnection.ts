@@ -20,7 +20,7 @@ import {
   saveConnectionConfig,
   type ConnectionConfig,
 } from "../../storage/connectionConfig";
-import { loadLayout } from "../../storage/layoutStorage";
+import { loadLayout, resetLayout, saveLayout } from "../../storage/layoutStorage";
 import { readAccessToken, saveAccessToken } from "../../services/secureTokenStorage";
 import type { DashboardConfig } from "../../storage/layout";
 import {
@@ -54,6 +54,8 @@ export interface DeskPanelConnectionDeps {
   readAccessToken: (deviceId: string) => Promise<string | null>;
   saveAccessToken: (deviceId: string, token: string) => Promise<void>;
   loadLayout: () => Promise<DashboardConfig>;
+  saveLayout: (config: DashboardConfig) => Promise<void>;
+  resetLayout: () => Promise<DashboardConfig>;
   checkHealth: (endpoint: HttpEndpoint) => Promise<HttpResult<HealthResponse>>;
   pairDevice: (
     endpoint: HttpEndpoint,
@@ -81,6 +83,8 @@ const defaultDeps: DeskPanelConnectionDeps = {
   readAccessToken,
   saveAccessToken,
   loadLayout,
+  saveLayout,
+  resetLayout,
   checkHealth,
   pairDevice: (endpoint, request) => pairDevice(endpoint, request),
   fetchActions,
@@ -99,6 +103,8 @@ export interface UseDeskPanelConnectionResult {
   testConnection: (host: string, port: number) => Promise<HttpResult<HealthResponse>>;
   pair: (input: PairInput) => Promise<PairOutcome>;
   executeAction: (actionId: string) => Promise<ActionResult>;
+  updateLayout: (next: DashboardConfig) => Promise<void>;
+  resetLayoutToDefault: () => Promise<void>;
 }
 
 function friendlyPairMessage(code: string, fallback: string): string {
@@ -288,6 +294,21 @@ export function useDeskPanelConnection(
     return client.executeAction(actionId);
   }, []);
 
+  const updateLayout = useCallback(
+    async (next: DashboardConfig): Promise<void> => {
+      await deps.saveLayout(next);
+      setLayout(next);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const resetLayoutToDefault = useCallback(async (): Promise<void> => {
+    const fresh = await deps.resetLayout();
+    setLayout(fresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return {
     phase,
     status,
@@ -300,5 +321,7 @@ export function useDeskPanelConnection(
     testConnection,
     pair,
     executeAction,
+    updateLayout,
+    resetLayoutToDefault,
   };
 }
