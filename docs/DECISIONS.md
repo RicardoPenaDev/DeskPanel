@@ -58,3 +58,21 @@ Decisão:
 Consequências:
 - `make verify` roda integralmente dentro do sandbox usando esse toolchain local.
 - O usuário deve garantir Go e pnpm instalados (via Homebrew ou outro gerenciador) no Mac real antes de rodar `make dev-agent`, `make build-agent` ou instalar o LaunchAgent fora deste ambiente assistido.
+
+---
+
+## ADR-0003 — Biblioteca de WebSocket e desenho do socket administrativo
+Data: 2026-09-15
+Status: aceita
+
+Contexto:
+A stdlib do Go não implementa WebSocket. `PROJECT.md` §4 pede "sem framework HTTP externo pesado", deixando a escolha da lib de WS para a Fase 2. Também foi preciso decidir como `pair`/`devices`/`revoke`/`status` (comandos de CLI de curta duração) conversam com o processo `serve` (de longa duração), já que a config e o catálogo de dispositivos só existem na memória do `serve` — `PROJECT.md` §7.1 já previa isso via socket Unix.
+
+Decisão:
+- WebSocket: `github.com/coder/websocket` (sucessor do `nhooyr.io/websocket`) — API baseada em `context.Context`, sem dependências transitivas, mantida ativamente. É a única dependência externa do agente.
+- Socket administrativo (`internal/adminsocket`): protocolo simples de request/response em JSON sobre `net.Listen("unix", ...)`, arquivo do socket com permissão 0700 no diretório. `serve` registra handlers para `pair`/`devices`/`revoke`/`status`; os subcomandos de CLI só discam o socket e formatam a resposta.
+- `github.com/coder/websocket` não estava acessível via `proxy.golang.org` (bloqueado pelo proxy de saída do sandbox usado pela IA) — foi baixado com `GOPROXY=direct GOSUMDB=off`, indo direto ao GitHub via git. `go.sum` foi gerado normalmente a partir desse download. No Mac real do usuário, `GOPROXY`/`GOSUMDB` padrão devem funcionar sem ajuste.
+
+Consequências:
+- Qualquer diretório de dados do agente (`config.json`, `devices.json`, `agent.sock`) que já exista com permissão mais aberta que 0700 é corrigido automaticamente na primeira escrita — não basta confiar em `MkdirAll`, que não reajusta permissão de diretório pré-existente.
+- `serve` precisa estar rodando para `pair`/`devices`/`revoke`/`status` funcionarem; sem ele, a CLI retorna um erro claro em vez de falhar silenciosamente.

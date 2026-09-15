@@ -1,17 +1,19 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
 
+	"deskpanel-agent/internal/adminsocket"
 	"deskpanel-agent/internal/config"
 )
 
-// cmdDoctor verifica o que dá pra verificar sem depender de um servidor
-// rodando (PROJECT.md §13): comandos do macOS no PATH, e agora também a
-// existência/validade de config.json e a permissão do diretório de dados.
+// cmdDoctor verifica comandos do macOS no PATH, a existência/validade de
+// config.json, a permissão do diretório de dados, e se um `serve` já está
+// rodando (via o socket administrativo) — PROJECT.md §13.
 func cmdDoctor(args []string) error {
 	fmt.Printf("SO: %s/%s\n\n", runtime.GOOS, runtime.GOARCH)
 
@@ -33,7 +35,8 @@ func cmdDoctor(args []string) error {
 	fmt.Println()
 	configOK := checkConfig()
 
-	fmt.Println("\nchecagens de porta e conexões: ainda não implementadas (Fase 2 — servidor real).")
+	fmt.Println()
+	checkRunningAgent()
 
 	if runtime.GOOS == "darwin" && (!binsOK || !configOK) {
 		return fmt.Errorf("uma ou mais checagens falharam — veja acima")
@@ -66,4 +69,20 @@ func checkConfig() bool {
 	}
 	fmt.Printf("  [ok]       config.json válido — %d ações registradas\n", len(cfg.Actions))
 	return true
+}
+
+// checkRunningAgent tenta falar com um `serve` já em execução pelo socket
+// administrativo. Não é um erro o agente estar parado — doctor só informa.
+func checkRunningAgent() {
+	result, err := adminsocket.Call(defaultAdminSocketPath(), "status", nil)
+	if err != nil {
+		fmt.Println("  [info]     nenhum 'deskpanel-agent serve' rodando no momento")
+		return
+	}
+	var res statusResult
+	if err := json.Unmarshal(result, &res); err != nil {
+		fmt.Println("  [aviso]    agente rodando, mas resposta de status inesperada")
+		return
+	}
+	fmt.Printf("  [ok]       agente rodando — porta %d, %d ações, %d conexões ativas\n", res.Port, res.ActionsCount, res.Connections)
 }

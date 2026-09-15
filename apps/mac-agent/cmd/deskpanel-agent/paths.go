@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-// defaultConfigPath returns ~/Library/Application Support/DeskPanel/config.json
+// defaultConfigPath retorna ~/Library/Application Support/DeskPanel/config.json
 // (PROJECT.md §7.2). Retorna "" se o diretório home não puder ser resolvido.
 func defaultConfigPath() string {
 	home, err := os.UserHomeDir()
@@ -23,4 +23,23 @@ func defaultAppDir() string {
 		return ""
 	}
 	return filepath.Dir(path)
+}
+
+// defaultDevicesPath retorna ~/Library/Application Support/DeskPanel/devices.json.
+func defaultDevicesPath() string {
+	dir := defaultAppDir()
+	if dir == "" {
+		return ""
+	}
+	return filepath.Join(dir, "devices.json")
+}
+
+// defaultAdminSocketPath retorna ~/Library/Application Support/DeskPanel/agent.sock
+// (PROJECT.md §7.1/§7.2).
+func defaultAdminSocketPath() string {
+	dir := defaultAppDir()
+	if dir == "" {
+		return ""
+	}
+	return filepath.Join(dir, "agent.sock")
 }

@@ -26,3 +26,16 @@ func TestDefaultAppDir_IsParentOfConfigPath(t *testing.T) {
 		t.Errorf("defaultAppDir() = %q não é pai de defaultConfigPath() = %q", dir, defaultConfigPath())
 	}
 }
+
+func TestDefaultDevicesAndSocketPaths_ShareAppDir(t *testing.T) {
+	dir := defaultAppDir()
+	if dir == "" {
+		t.Skip("HOME não definido neste ambiente")
+	}
+	if filepath.Dir(defaultDevicesPath()) != dir {
+		t.Errorf("defaultDevicesPath() não está em defaultAppDir()")
+	}
+	if filepath.Dir(defaultAdminSocketPath()) != dir {
+		t.Errorf("defaultAdminSocketPath() não está em defaultAppDir()")
+	}
+}
