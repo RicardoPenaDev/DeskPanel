@@ -24,11 +24,3 @@ func TestFakeExecutor_UsesScriptedResult(t *testing.T) {
 		t.Errorf("res = %+v, want status=error errorCode=ACTION_FAILED", res)
 	}
 }
-
-func TestMacOSExecutor_NotImplementedYet(t *testing.T) {
-	m := &MacOSExecutor{}
-	res := m.Execute(context.Background(), actions.Action{ID: "app.chrome", Kind: actions.KindOpenApp})
-	if res.Status != "error" {
-		t.Errorf("Status = %q, want %q (Fase 1 ainda não implementada)", res.Status, "error")
-	}
-}

@@ -39,3 +39,6 @@ state.json
 
 # pnpm local store (deve ficar fora do repo)
 .pnpm-store/
+
+# Vite config temp files
+*.timestamp-*.mjs

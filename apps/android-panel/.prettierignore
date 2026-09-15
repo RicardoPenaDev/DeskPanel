@@ -3,3 +3,4 @@ android
 coverage
 node_modules
 pnpm-lock.yaml
+*.timestamp-*.mjs
