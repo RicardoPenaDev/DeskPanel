@@ -1,0 +1,41 @@
+# Node / Vite / Capacitor
+node_modules/
+dist/
+dist-ssr/
+*.local
+apps/android-panel/android/app/build/
+apps/android-panel/android/.gradle/
+apps/android-panel/android/build/
+apps/android-panel/android/local.properties
+apps/android-panel/.capacitor/
+apps/android-panel/ios/
+
+# Go
+apps/mac-agent/bin/
+apps/mac-agent/deskpanel-agent
+*.test
+*.out
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Logs e segredos locais (nunca versionar)
+*.log
+config.json
+devices.json
+state.json
+.env
+.env.*
+
+# Build artifacts
+*.apk
+*.aab
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# pnpm local store (deve ficar fora do repo)
+.pnpm-store/

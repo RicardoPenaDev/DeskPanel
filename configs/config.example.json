@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "server": {
+    "listenAddress": "0.0.0.0",
+    "port": 38121,
+    "pairingWindowSeconds": 300,
+    "maxConnections": 5
+  },
+  "security": {
+    "allowPublicNetworks": false,
+    "requestsPerMinute": 120,
+    "failedAuthLimit": 10
+  },
+  "actions": [
+    {
+      "id": "app.chrome",
+      "label": "Chrome",
+      "icon": "chrome",
+      "kind": "open_app",
+      "parameters": { "application": "Google Chrome" }
+    },
+    {
+      "id": "app.whatsapp",
+      "label": "WhatsApp",
+      "icon": "message-circle",
+      "kind": "open_app",
+      "parameters": { "application": "WhatsApp" }
+    },
+    {
+      "id": "media.spotify.playpause",
+      "label": "Play/Pause",
+      "icon": "play-pause",
+      "kind": "spotify_control",
+      "parameters": { "operation": "play_pause" }
+    },
+    {
+      "id": "volume.up",
+      "label": "Volume +",
+      "icon": "volume-2",
+      "kind": "volume_delta",
+      "parameters": { "delta": 5 }
+    },
+    {
+      "id": "shortcut.work",
+      "label": "Modo trabalho",
+      "icon": "briefcase-business",
+      "kind": "run_shortcut",
+      "parameters": { "shortcut": "Modo Trabalho" }
+    }
+  ]
+}
