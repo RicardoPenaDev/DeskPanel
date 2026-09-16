@@ -129,7 +129,6 @@ export default function Icon({ name, src, size = 22, className, ...svgProps }: I
         aria-hidden="true"
         draggable={false}
         className={["dp-icon-image", className].filter(Boolean).join(" ")}
-        style={{ borderRadius: size * 0.22 }}
       />
     );
   }

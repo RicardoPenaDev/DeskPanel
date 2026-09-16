@@ -54,7 +54,11 @@ export default function ActionPicker({ actionsCatalog, onPick, onCancel }: Actio
               {visibleActions.map((action) => (
                 <li key={action.id}>
                   <button type="button" onClick={() => onPick(action.id)}>
-                    <Icon name={action.icon} src={action.iconUrl} />
+                    <Icon
+                      name={action.icon}
+                      src={action.iconUrl}
+                      className="dp-action-picker__icon"
+                    />
                     <span>{action.label}</span>
                   </button>
                 </li>

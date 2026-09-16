@@ -375,6 +375,7 @@ export default function EditorScreen({
                     <Icon
                       name={button.iconOverride ?? catalogAction?.icon}
                       src={button.iconOverride ? undefined : catalogAction?.iconUrl}
+                      className="dp-editor__slot-icon"
                     />
                     <span>{label}</span>
                   </>

@@ -515,8 +515,14 @@ body {
 
 /* --- Botão do painel: ícone + botão "Editar" no cabeçalho --------------- */
 
-.dp-button__icon {
+.dp-button__icon,
+.dp-editor__slot-icon {
   color: inherit;
+  width: 44%;
+  height: auto;
+  max-width: 112px;
+  min-width: 28px;
+  aspect-ratio: 1;
 }
 
 .dp-dashboard__edit-button {
@@ -589,5 +595,13 @@ body {
 
 .dp-icon-image {
   object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 22%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.dp-action-picker__icon {
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
 }
