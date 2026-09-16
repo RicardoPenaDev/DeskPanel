@@ -42,4 +42,5 @@ export type ErrorCode =
   | "ACTION_TIMEOUT"
   | "ACTION_FAILED"
   | "RATE_LIMITED"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "WEATHER_UNAVAILABLE";

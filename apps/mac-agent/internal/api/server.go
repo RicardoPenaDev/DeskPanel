@@ -12,12 +12,14 @@ import (
 	"deskpanel-agent/internal/devices"
 	"deskpanel-agent/internal/pairing"
 	"deskpanel-agent/internal/ratelimit"
+	"deskpanel-agent/internal/weather"
 )
 
 // Server monta o roteador HTTP completo do agente.
 type Server struct {
 	Actions      []actions.Action
 	Apps         *appscan.Scanner
+	Weather      *weather.Provider
 	Devices      *devices.Store
 	Pairing      *pairing.Manager
 	Limiter      *ratelimit.Limiter
@@ -40,6 +42,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/actions", requireBearerToken(s.Devices)(ActionsHandler(s.Actions)))
 	mux.Handle("GET /api/v1/apps", requireBearerToken(s.Devices)(AppsHandler(s.Apps)))
 	mux.Handle("GET /api/v1/apps/{id}/icon", requireBearerToken(s.Devices)(AppIconHandler(s.Apps)))
+	mux.Handle("GET /api/v1/weather", requireBearerToken(s.Devices)(WeatherHandler(s.Weather)))
 	mux.Handle("GET /api/v1/state", requireBearerToken(s.Devices)(StateHandler(s.MacName, s.AgentVersion)))
 	if s.WSHandler != nil {
 		mux.Handle("GET /api/v1/ws", s.WSHandler)

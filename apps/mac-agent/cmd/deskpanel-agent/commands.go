@@ -24,6 +24,7 @@ import (
 	"deskpanel-agent/internal/pairing"
 	"deskpanel-agent/internal/protocol"
 	"deskpanel-agent/internal/ratelimit"
+	"deskpanel-agent/internal/weather"
 	"deskpanel-agent/internal/websocket"
 )
 
@@ -68,6 +69,7 @@ func cmdServe(args []string) error {
 	}
 
 	appScanner := appscan.New()
+	weatherProvider := weather.New()
 
 	wsHandler := &websocket.Handler{
 		Devices:      store,
@@ -82,6 +84,7 @@ func cmdServe(args []string) error {
 	apiServer := &api.Server{
 		Actions:      cfg.Actions,
 		Apps:         appScanner,
+		Weather:      weatherProvider,
 		Devices:      store,
 		Pairing:      pairingMgr,
 		Limiter:      limiter,

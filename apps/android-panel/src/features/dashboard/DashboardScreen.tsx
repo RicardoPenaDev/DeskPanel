@@ -13,6 +13,10 @@
 // véu escuro atrás dela, ou abrir o editor/configurações a fecha de
 // novo. Fica sempre presente no DOM (só translada para fora da tela),
 // então continua acessível por toque mesmo escondida.
+//
+// Arrastar para a direita a partir da primeira página revela uma tela
+// "ambiente" (relógio flip-clock + clima), como o Today View do iPhone
+// à esquerda da tela inicial; arrastar para a esquerda volta ao painel.
 
 import { useEffect, useRef, useState, type TouchEvent } from "react";
 import type { DashboardConfig } from "../../storage/layout";
@@ -22,6 +26,7 @@ import type { ActionResult, ConnectionStatus } from "../../protocol/wsClient";
 import StatusBadge from "../../components/StatusBadge";
 import PageIndicator from "../../components/PageIndicator";
 import DashboardButton from "../../components/DashboardButton";
+import FlipClock, { type WeatherSummary } from "../../components/FlipClock";
 
 export interface DashboardScreenProps {
   layout: DashboardConfig;
@@ -29,6 +34,7 @@ export interface DashboardScreenProps {
   status: ConnectionStatus;
   macName: string | null;
   vibrationEnabled?: boolean;
+  weather?: WeatherSummary | null;
   executeAction: (actionId: string) => Promise<ActionResult>;
   onOpenEditor: () => void;
   onOpenSettings: () => void;
@@ -44,6 +50,7 @@ export default function DashboardScreen({
   status,
   macName,
   vibrationEnabled = true,
+  weather,
   executeAction,
   onOpenEditor,
   onOpenSettings,
@@ -53,6 +60,7 @@ export default function DashboardScreen({
   const pages = profile?.pages ?? [];
   const [pageIndex, setPageIndex] = useState(0);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [ambientOpen, setAmbientOpen] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const emptySlotTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -84,6 +92,15 @@ export default function DashboardScreen({
     const endY = event.changedTouches[0]?.clientY ?? startY;
     const deltaY = startY === null || endY === null ? null : endY - startY;
 
+    // Com a tela ambiente aberta, só um arrasto para a esquerda importa
+    // (fecha e volta ao painel) — ignora vertical/direita nesse estado.
+    if (ambientOpen) {
+      if (deltaX < -SWIPE_THRESHOLD_PX) {
+        setAmbientOpen(false);
+      }
+      return;
+    }
+
     // Arrasto vertical dominante: abre/fecha a folha de controles em vez
     // de trocar de página. deltaY é null quando o teste/gesto não informa
     // clientY — cai direto no arrasto horizontal de página.
@@ -98,8 +115,14 @@ export default function DashboardScreen({
       }
     }
 
-    if (deltaX > SWIPE_THRESHOLD_PX && safePageIndex > 0) {
-      setPageIndex(safePageIndex - 1);
+    if (deltaX > SWIPE_THRESHOLD_PX) {
+      // Arrastar para a direita na primeira página revela o ambiente
+      // (relógio+clima), como o Today View à esquerda da Home do iPhone.
+      if (safePageIndex > 0) {
+        setPageIndex(safePageIndex - 1);
+      } else {
+        setAmbientOpen(true);
+      }
     } else if (deltaX < -SWIPE_THRESHOLD_PX && safePageIndex < pages.length - 1) {
       setPageIndex(safePageIndex + 1);
     }
@@ -181,11 +204,22 @@ export default function DashboardScreen({
         </div>
       )}
 
+      <div
+        className={`dp-dashboard__ambient${ambientOpen ? " dp-dashboard__ambient--open" : ""}`}
+        role="region"
+        aria-label="Relógio ambiente"
+        aria-hidden={!ambientOpen}
+        onClick={() => setAmbientOpen(false)}
+      >
+        <FlipClock weather={weather} />
+      </div>
+
       <button
         type="button"
         className="dp-dashboard__reveal-hint"
         aria-label="Mostrar controles"
         aria-expanded={controlsOpen}
+        tabIndex={ambientOpen ? -1 : undefined}
         onClick={() => setControlsOpen((open) => !open)}
       >
         <span aria-hidden="true" />

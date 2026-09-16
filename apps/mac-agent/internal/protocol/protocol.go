@@ -62,4 +62,5 @@ const (
 	ErrActionFailed        ErrorCode = "ACTION_FAILED"
 	ErrRateLimited         ErrorCode = "RATE_LIMITED"
 	ErrInternalError       ErrorCode = "INTERNAL_ERROR"
+	ErrWeatherUnavailable  ErrorCode = "WEATHER_UNAVAILABLE"
 )

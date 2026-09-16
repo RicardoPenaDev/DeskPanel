@@ -712,3 +712,151 @@ body {
   height: 32px;
   flex-shrink: 0;
 }
+
+/* --- Relógio ambiente (arrastar para a direita a partir da 1ª página) -- */
+
+.dp-dashboard__ambient {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 15;
+}
+
+.dp-dashboard__ambient--open {
+  transform: translateX(0);
+}
+
+.dp-flip-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.dp-flip-clock__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dp-flip-clock__colon {
+  color: #fff;
+  font-size: 48px;
+  font-weight: 700;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.dp-flip-clock__date {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.1rem;
+}
+
+.dp-flip-clock__weather {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: #fff;
+}
+
+.dp-flip-clock__weather-temp {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.dp-flip-clock__weather-desc {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1rem;
+}
+
+.dp-flip-unit {
+  position: relative;
+  width: 64px;
+  height: 96px;
+  font-size: 64px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  perspective: 300px;
+}
+
+.dp-flip-unit__card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: #161616;
+}
+
+.dp-flip-unit__card span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 96px;
+  line-height: 96px;
+  text-align: center;
+}
+
+.dp-flip-unit__card--top {
+  top: 0;
+  border-radius: 8px 8px 0 0;
+}
+
+.dp-flip-unit__card--bottom {
+  bottom: 0;
+  border-radius: 0 0 8px 8px;
+}
+
+.dp-flip-unit__card--bottom span {
+  top: -48px;
+}
+
+.dp-flip-unit__hinge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 1px);
+  height: 2px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.dp-flip-unit__flap {
+  z-index: 2;
+  backface-visibility: hidden;
+}
+
+.dp-flip-unit__flap--top {
+  transform-origin: bottom;
+  animation: dp-flip-top 0.19s ease-in forwards;
+}
+
+.dp-flip-unit__flap--bottom {
+  transform-origin: top;
+  transform: rotateX(90deg);
+  animation: dp-flip-bottom 0.19s ease-out 0.19s forwards;
+}
+
+@keyframes dp-flip-top {
+  from {
+    transform: rotateX(0deg);
+  }
+  to {
+    transform: rotateX(-90deg);
+  }
+}
+
+@keyframes dp-flip-bottom {
+  from {
+    transform: rotateX(90deg);
+  }
+  to {
+    transform: rotateX(0deg);
+  }
+}

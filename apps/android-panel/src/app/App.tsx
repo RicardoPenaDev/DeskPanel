@@ -85,6 +85,7 @@ export default function App({ connectionOverrides }: AppProps = {}) {
       status={connection.status}
       macName={connection.macName}
       vibrationEnabled={connection.appSettings.vibrationEnabled}
+      weather={connection.weather}
       executeAction={connection.executeAction}
       onOpenEditor={() => setMode("editor")}
       onOpenSettings={() => setMode("settings")}

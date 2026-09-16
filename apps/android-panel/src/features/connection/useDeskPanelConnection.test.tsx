@@ -61,6 +61,10 @@ function makeDeps(overrides: Partial<DeskPanelConnectionDeps> = {}) {
     fetchActions: vi.fn(async () => ({ ok: true as const, data: [] })),
     fetchApps: vi.fn(async () => ({ ok: true as const, data: [] })),
     fetchAppIcon: vi.fn(async () => null),
+    fetchWeather: vi.fn(async () => ({
+      ok: false as const,
+      error: { code: "WEATHER_UNAVAILABLE" as const, message: "" },
+    })),
     createWsClient: vi.fn((_config, handlers: WsClientHandlers) => {
       Object.assign(wsHandlers, handlers);
       return fakeWsClient;
@@ -174,6 +178,58 @@ describe("useDeskPanelConnection", () => {
       "tok-existente",
       "app:aaaa",
     );
+  });
+
+  it("busca o clima ao ficar pronto e expõe em `weather`", async () => {
+    const { deps, wsHandlers } = makeDeps({
+      loadConnectionConfig: vi.fn(async () => ({
+        deviceId: "device-1",
+        deviceName: "Moto G60",
+        host: "192.168.1.50",
+        port: 38121,
+      })),
+      readAccessToken: vi.fn(async () => "tok-existente"),
+      fetchWeather: vi.fn(async () => ({
+        ok: true as const,
+        data: {
+          city: "São Paulo",
+          tempC: 24.4,
+          description: "céu limpo",
+          updatedAt: "2026-09-16T12:00:00Z",
+        },
+      })),
+    });
+
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("connecting"));
+    act(() => wsHandlers.onStatusChange?.("connected"));
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+
+    await waitFor(() => expect(result.current.weather?.city).toBe("São Paulo"));
+    expect(deps.fetchWeather).toHaveBeenCalledWith(
+      { host: "192.168.1.50", port: 38121 },
+      "tok-existente",
+    );
+  });
+
+  it("mantém `weather` nulo (sem quebrar) quando a busca de clima falha", async () => {
+    const { wsHandlers, deps } = makeDeps({
+      loadConnectionConfig: vi.fn(async () => ({
+        deviceId: "device-1",
+        deviceName: "Moto G60",
+        host: "192.168.1.50",
+        port: 38121,
+      })),
+      readAccessToken: vi.fn(async () => "tok-existente"),
+    });
+
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("connecting"));
+    act(() => wsHandlers.onStatusChange?.("connected"));
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(result.current.weather).toBeNull();
   });
 
   it("mantém as ações curadas mesmo quando a busca de apps falha (degrada sem quebrar)", async () => {

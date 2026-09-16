@@ -10,6 +10,7 @@ import {
   fetchActions,
   fetchAppIcon,
   fetchApps,
+  fetchWeather,
   pairDevice,
   type ActionSummary,
   type AppSummary,
@@ -17,6 +18,7 @@ import {
   type HttpEndpoint,
   type HttpResult,
   type PairRequest,
+  type WeatherSnapshot,
 } from "../../protocol/httpClient";
 import {
   loadOrCreateConnectionConfig,
@@ -45,6 +47,10 @@ import {
 import { APP_VERSION } from "../../version";
 
 export type ConnectionPhase = "loading" | "pairing" | "connecting" | "ready";
+
+// Mesmo TTL do cache de clima no Mac (internal/weather) — pedir mais
+// rápido que isso só bateria no cache do lado de lá à toa.
+const WEATHER_REFRESH_MS = 15 * 60 * 1000;
 
 export interface WsClientLike {
   connect(): void;
@@ -90,6 +96,11 @@ export interface DeskPanelConnectionDeps {
     accessToken: string,
     appId: string,
   ) => Promise<string | null>;
+  // Clima atual para a tela ambiente (relógio + clima) — ver FlipClock.
+  fetchWeather: (
+    endpoint: HttpEndpoint,
+    accessToken: string,
+  ) => Promise<HttpResult<WeatherSnapshot>>;
   createWsClient: (
     config: {
       host: string;
@@ -118,6 +129,7 @@ const defaultDeps: DeskPanelConnectionDeps = {
   fetchActions,
   fetchApps,
   fetchAppIcon,
+  fetchWeather,
   createWsClient: (config, handlers) => new WsClient(config, handlers),
 };
 
@@ -129,6 +141,7 @@ export interface UseDeskPanelConnectionResult {
   actionsCatalog: Record<string, ActionSummary>;
   macName: string | null;
   agentVersion: string | null;
+  weather: WeatherSnapshot | null;
   connectionError: string | null;
   appSettings: AppSettings;
   testConnection: (host: string, port: number) => Promise<HttpResult<HealthResponse>>;
@@ -176,6 +189,7 @@ export function useDeskPanelConnection(
   const [actionsCatalog, setActionsCatalog] = useState<Record<string, ActionSummary>>({});
   const [macName, setMacName] = useState<string | null>(null);
   const [agentVersion, setAgentVersion] = useState<string | null>(null);
+  const [weather, setWeather] = useState<WeatherSnapshot | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
 
@@ -318,6 +332,32 @@ export function useDeskPanelConnection(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, connectionConfig, accessToken]);
 
+  // Clima para a tela ambiente: busca ao conectar e depois a cada 15min
+  // (mesmo TTL do cache no Mac — pedir mais rápido que isso só bateria
+  // no cache do lado de lá). Uma falha aqui nunca derruba a conexão: o
+  // relógio ambiente só fica sem o clima.
+  useEffect(() => {
+    if (phase !== "ready" || !connectionConfig || !accessToken) return;
+    let cancelled = false;
+    const endpoint = { host: connectionConfig.host, port: connectionConfig.port };
+    const token = accessToken;
+
+    function refresh(): void {
+      deps.fetchWeather(endpoint, token).then((result) => {
+        if (cancelled || !result.ok) return;
+        setWeather(result.data);
+      });
+    }
+
+    refresh();
+    const id = setInterval(refresh, WEATHER_REFRESH_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, connectionConfig, accessToken]);
+
   const testConnection = useCallback(
     (host: string, port: number) => deps.checkHealth({ host, port }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -432,6 +472,7 @@ export function useDeskPanelConnection(
     actionsCatalog,
     macName,
     agentVersion,
+    weather,
     connectionError,
     appSettings,
     testConnection,

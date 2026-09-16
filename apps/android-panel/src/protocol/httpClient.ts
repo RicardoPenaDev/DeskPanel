@@ -34,6 +34,13 @@ export interface StateSnapshot {
   agentVersion: string;
 }
 
+export interface WeatherSnapshot {
+  city: string;
+  tempC: number;
+  description: string;
+  updatedAt: string;
+}
+
 export interface HealthResponse {
   status: string;
   service: string;
@@ -182,6 +189,22 @@ export function fetchState(
   accessToken: string,
 ): Promise<HttpResult<StateSnapshot>> {
   return fetchJson<StateSnapshot>(`${baseUrl(endpoint)}/state`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+/**
+ * fetchWeather busca o clima atual (geolocalizado pelo próprio Mac) para
+ * a tela ambiente do Android. Sem internet no Mac ou geolocalização
+ * recusada vira HttpResult com ok:false — o relógio ambiente só não
+ * mostra o clima, nunca quebra a tela.
+ */
+export function fetchWeather(
+  endpoint: HttpEndpoint,
+  accessToken: string,
+): Promise<HttpResult<WeatherSnapshot>> {
+  return fetchJson<WeatherSnapshot>(`${baseUrl(endpoint)}/weather`, {
     method: "GET",
     headers: { Authorization: `Bearer ${accessToken}` },
   });

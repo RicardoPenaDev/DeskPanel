@@ -168,6 +168,114 @@ describe("DashboardScreen", () => {
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
+  describe("tela ambiente (relógio + clima)", () => {
+    function ambient() {
+      return document.querySelector(".dp-dashboard__ambient") as HTMLElement;
+    }
+
+    it("começa escondida (sem a classe --open)", () => {
+      render(
+        <DashboardScreen
+          layout={defaultDashboardConfig()}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      expect(ambient().className).not.toContain("dp-dashboard__ambient--open");
+    });
+
+    it("arrastar para a direita na primeira página revela o ambiente em vez de trocar de página", () => {
+      const layout = defaultDashboardConfig();
+      render(
+        <DashboardScreen
+          layout={layout}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      const main = screen.getByRole("main");
+      fireEvent.touchStart(main, { touches: [{ clientX: 20 }] });
+      fireEvent.touchEnd(main, { changedTouches: [{ clientX: 300 }] });
+
+      expect(ambient().className).toContain("dp-dashboard__ambient--open");
+      expect(screen.getByText(layout.profiles[0].pages[0].name)).toBeInTheDocument();
+    });
+
+    it("arrastar para a esquerda fecha o ambiente e volta ao painel", () => {
+      render(
+        <DashboardScreen
+          layout={defaultDashboardConfig()}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      const main = screen.getByRole("main");
+      fireEvent.touchStart(main, { touches: [{ clientX: 20 }] });
+      fireEvent.touchEnd(main, { changedTouches: [{ clientX: 300 }] });
+      expect(ambient().className).toContain("dp-dashboard__ambient--open");
+
+      fireEvent.touchStart(main, { touches: [{ clientX: 300 }] });
+      fireEvent.touchEnd(main, { changedTouches: [{ clientX: 20 }] });
+      expect(ambient().className).not.toContain("dp-dashboard__ambient--open");
+    });
+
+    it("tocar no ambiente aberto fecha e volta ao painel", () => {
+      render(
+        <DashboardScreen
+          layout={defaultDashboardConfig()}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      const main = screen.getByRole("main");
+      fireEvent.touchStart(main, { touches: [{ clientX: 20 }] });
+      fireEvent.touchEnd(main, { changedTouches: [{ clientX: 300 }] });
+      expect(ambient().className).toContain("dp-dashboard__ambient--open");
+
+      fireEvent.click(ambient());
+      expect(ambient().className).not.toContain("dp-dashboard__ambient--open");
+    });
+
+    it("mostra o clima quando informado", () => {
+      render(
+        <DashboardScreen
+          layout={defaultDashboardConfig()}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          weather={{ city: "São Paulo", tempC: 24.4, description: "céu limpo" }}
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByText("24°")).toBeInTheDocument();
+      expect(screen.getByText(/céu limpo/i)).toBeInTheDocument();
+      expect(screen.getByText(/São Paulo/)).toBeInTheDocument();
+    });
+  });
+
   describe("folha de controles (Editar/Configurações escondidos)", () => {
     function sheet() {
       return document.querySelector(".dp-dashboard__sheet") as HTMLElement;
