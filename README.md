@@ -33,6 +33,11 @@ make build-apk       # gera o APK do painel Android
 make verify           # formatação + lint + testes + builds, sem instalar nada no sistema
 ```
 
+## Instalação real
+
+- macOS (agente): [`docs/INSTALL-MACOS.md`](./docs/INSTALL-MACOS.md) — `scripts/install-macos.sh` / `scripts/uninstall-macos.sh`.
+- Android (painel): [`docs/INSTALL-ANDROID.md`](./docs/INSTALL-ANDROID.md) — `scripts/build-apk.sh`, instalação via ADB ou abrindo o `.apk` manualmente no aparelho.
+
 ## Status
 
 Veja [`docs/STATUS.md`](./docs/STATUS.md) para o estado atual do projeto por fase.

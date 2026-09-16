@@ -118,3 +118,21 @@ Consequências:
 - Se o toque-para-reorganizar se mostrar pouco intuitivo no teste físico do Moto G60 (Fase 5), trocar para arrastar-e-soltar de verdade é uma mudança isolada em `EditorScreen`/`DashboardButton`, sem impacto em armazenamento ou protocolo.
 - O conjunto de 17 ícones é deliberadamente pequeno; um pacote maior/mais bonito fica para a Fase 6 (polimento), mas já não há mais placeholder de texto puro nos botões.
 - Um `schemaVersion` novo exigirá escrever a função de migração real quando o formato realmente mudar — o "seam" já existe, a migração em si não.
+
+## ADR-0006 — Scripts de instalação macOS/Android: não-destrutivo por padrão, LaunchAgent com restart-on-crash
+Data: 2026-09-16
+Status: aceita
+
+Contexto:
+`PROJECT.md` §14.2/§14.3 e §17 (Fase 5) pedem `scripts/install-macos.sh`, `scripts/uninstall-macos.sh` e `scripts/build-apk.sh` reais. §19.3 proíbe qualquer instalação real, carregamento de LaunchAgent real, pareamento com o Moto G60 físico ou execução de ação real sem autorização explícita do proprietário — então os scripts precisavam ser escritos e validados no que fosse possível (sintaxe, `--help`, guarda de plataforma, o caminho `build-apk.sh --web-only` completo) sem serem de fato executados contra o Mac real neste ambiente (sandbox Linux, sem `launchctl`/Gradle/Android SDK).
+
+Decisão:
+- **`install-macos.sh`**: por padrão nunca sobrescreve `config.json` existente (só cria a partir de `configs/config.example.json` se ausente); `--force` é obrigatório para sobrescrever. Aceita `--binary <caminho>` para pular `go build` (permite instalar um binário cross-compilado). O LaunchAgent (`dev.ricardopena.deskpanel.agent.plist`) é gerado com `$INSTALLED_BINARY`/`$HOME` resolvidos em tempo de instalação — nunca um nome de usuário fixo no template. `KeepAlive.SuccessfulExit = false`: o launchd reinicia o processo se ele cair/crashar, mas não fica reiniciando em loop se o agente sair com código 0 de propósito (ex.: um futuro comando administrativo de "parar o serviço"). `RunAtLoad = true` garante que o agente volta sozinho após logout/login — é o mecanismo que cobre o critério de saída da Fase 5 "agente volta após logout/login", sem precisar de um daemon separado de supervisão.
+- **`uninstall-macos.sh`**: remove serviço + binário por padrão, preserva `config.json`/`devices.json`/`state.json`/logs. Remover dados exige `--purge`, que por sua vez pede confirmação interativa (`read -p`) a menos que `--yes`/`-y` também seja passado — evita apagar pareamentos/configuração por engano rodando o comando errado.
+- **`build-apk.sh`**: flag `--web-only` roda só `pnpm install`/`test`/`build`/`cap sync`, sem invocar Gradle — permitiu validar de ponta a ponta o pipeline de build neste sandbox (sem Android SDK) e serve como verificação rápida de regressão em CI que não tenha o SDK Android instalado. As etapas de teste/lint continuam sendo as mesmas do `Makefile` (`pnpm test`, `pnpm build`), sem duplicar lógica.
+- Todos os três scripts: `set -euo pipefail`, sem nenhum shell intermediário sobre entrada externa (as únicas entradas aceitas são flags fixas, nunca comando/caminho/URL livre — mesma disciplina de segurança do agente Go, aplicada aqui aos scripts de instalação).
+
+Consequências:
+- A execução real dos três scripts contra o Mac do usuário, o carregamento do LaunchAgent de verdade, o pareamento com o Moto G60 físico e o build via Gradle real ficam pendentes de autorização explícita e de rodar num Mac de verdade — não fazem parte desta mudança. `docs/STATUS.md` reflete isso como pendência da Fase 5.
+- Se o critério "Moto G60 reconecta automaticamente" exigir mudança de comportamento (ex.: reconexão mais agressiva no `wsClient`), isso é um ajuste em `apps/android-panel`, não nos scripts de instalação.
+- `--purge` sem `--yes` é interativo por desenho; scripts de automação/CI que precisarem purgar dados devem passar `--yes` explicitamente.
