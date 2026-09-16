@@ -37,6 +37,14 @@ const (
 	scanTimeout  = 3 * time.Second
 	iconTimeout  = 3 * time.Second
 	iconMaxSizeP = 128 // px, lado maior
+
+	// defaultScanCacheTTL evita rescanear ~100+ apps (um `plutil` por
+	// app) do zero a cada ícone pedido: o Android busca a lista de apps
+	// e depois N ícones quase juntos ao abrir o painel — sem esse cache
+	// cada uma dessas N buscas de ícone repetia a varredura inteira, e a
+	// pilha de processos concorrentes fazia a maioria estourar o timeout
+	// do lado do Android (só o mais rápido chegava a tempo).
+	defaultScanCacheTTL = 4 * time.Second
 )
 
 // App é um bundle .app encontrado em uma das pastas varridas.
@@ -63,13 +71,22 @@ type iconCacheEntry struct {
 type Scanner struct {
 	Dirs []string
 
-	mu    sync.Mutex
-	icons map[string]iconCacheEntry
+	// ScanCacheTTL controla por quanto tempo Scan() reaproveita a última
+	// varredura em vez de reler o disco. Zero (o valor padrão do struct)
+	// desliga o cache — sempre relê na hora; é o que os testes que
+	// verificam "reflete o disco imediatamente" esperam. New() liga o
+	// cache com defaultScanCacheTTL para uso em produção.
+	ScanCacheTTL time.Duration
+
+	mu        sync.Mutex
+	icons     map[string]iconCacheEntry
+	scanned   []App
+	scannedAt time.Time
 }
 
-// New cria um Scanner com as pastas padrão.
+// New cria um Scanner com as pastas padrão e o cache de varredura ligado.
 func New() *Scanner {
-	return &Scanner{}
+	return &Scanner{ScanCacheTTL: defaultScanCacheTTL}
 }
 
 func (s *Scanner) dirs() []string {
@@ -79,10 +96,31 @@ func (s *Scanner) dirs() []string {
 	return defaultDirs
 }
 
-// Scan lista todo .app encontrado, ordenado por nome. Uma pasta ou
-// bundle ilegível é ignorado silenciosamente — nunca derruba a lista
-// inteira.
+// Scan lista todo .app encontrado, ordenado por nome — servindo do
+// cache quando ScanCacheTTL ainda não expirou (ver defaultScanCacheTTL).
+// Uma pasta ou bundle ilegível é ignorado silenciosamente — nunca
+// derruba a lista inteira.
 func (s *Scanner) Scan() []App {
+	s.mu.Lock()
+	if s.ScanCacheTTL > 0 && !s.scannedAt.IsZero() && time.Since(s.scannedAt) < s.ScanCacheTTL {
+		cached := s.scanned
+		s.mu.Unlock()
+		return cached
+	}
+	s.mu.Unlock()
+
+	apps := s.scanDisk()
+
+	s.mu.Lock()
+	s.scanned = apps
+	s.scannedAt = time.Now()
+	s.mu.Unlock()
+	return apps
+}
+
+// scanDisk é a varredura de verdade (sempre lê o disco), separada de
+// Scan() só para o cache acima poder envolvê-la.
+func (s *Scanner) scanDisk() []App {
 	seen := make(map[string]bool)
 	var apps []App
 
@@ -111,9 +149,11 @@ func (s *Scanner) Scan() []App {
 	return apps
 }
 
-// Resolve refaz a varredura e procura um app pelo ID. Usado logo antes
-// de montar a ação a executar, para que um ID de app desinstalado nunca
-// vire um "open_app" — sempre reflete o disco na hora.
+// Resolve procura um app pelo ID na varredura mais recente (ver Scan
+// e ScanCacheTTL). Usado logo antes de montar a ação a executar, para
+// que um app desinstalado deixe de ser executável em até ScanCacheTTL
+// — não instantâneo, mas o bastante para nunca ficar executável de
+// verdade por muito tempo depois de sair do disco.
 func (s *Scanner) Resolve(id string) (App, bool) {
 	for _, app := range s.Scan() {
 		if app.ID == id {

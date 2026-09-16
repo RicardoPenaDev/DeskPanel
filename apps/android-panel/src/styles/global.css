@@ -321,7 +321,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 2px;
   font-size: 0.85rem;
   padding: 8px;
   touch-action: manipulation;
@@ -329,6 +329,19 @@ body {
     transform 0.12s ease,
     background-color 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+/* Ícone grande o bastante pra reconhecer de longe; nome vira legenda
+   pequena e discreta — só um apoio, não o jeito principal de identificar
+   o botão. */
+.dp-button__label {
+  font-size: 0.68rem;
+  color: var(--dp-muted);
+  line-height: 1.15;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dp-button--pressed {
@@ -624,10 +637,10 @@ body {
 .dp-button__icon,
 .dp-editor__slot-icon {
   color: inherit;
-  width: 44%;
+  width: 62%;
   height: auto;
-  max-width: 112px;
-  min-width: 28px;
+  max-width: 156px;
+  min-width: 30px;
   aspect-ratio: 1;
 }
 

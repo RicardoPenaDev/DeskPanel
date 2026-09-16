@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // writeTestApp cria um bundle .app mínimo mas real (Info.plist válido)
@@ -186,5 +187,48 @@ func TestResolve_ReflectsAppRemovedFromDisk(t *testing.T) {
 
 	if _, ok := s.Resolve(id); ok {
 		t.Fatal("Resolve() não deveria encontrar um app removido do disco")
+	}
+}
+
+// TestScan_CacheServesStaleResultWithinTTL prova a razão de existir do
+// cache: dentro do ScanCacheTTL, um Scan() repetido não relê o disco —
+// sem isso, N buscas de ícone quase simultâneas (o padrão real do
+// Android ao abrir o painel) disparavam N variações inteiras de novo.
+func TestScan_CacheServesStaleResultWithinTTL(t *testing.T) {
+	dir := t.TempDir()
+	appPath := writeTestApp(t, dir, "Cached", "Cached App", "AppIcon", "")
+
+	s := &Scanner{Dirs: []string{dir}, ScanCacheTTL: time.Hour}
+	first := s.Scan()
+	if len(first) != 1 {
+		t.Fatalf("setup: Scan() encontrou %d apps", len(first))
+	}
+
+	if err := os.RemoveAll(appPath); err != nil {
+		t.Fatalf("RemoveAll: %v", err)
+	}
+
+	second := s.Scan()
+	if len(second) != 1 {
+		t.Fatal("Scan() deveria servir o cache (app removido não deveria ter sumido ainda)")
+	}
+}
+
+func TestScan_CacheExpiresAfterTTL(t *testing.T) {
+	dir := t.TempDir()
+	appPath := writeTestApp(t, dir, "Expiring", "Expiring App", "AppIcon", "")
+
+	s := &Scanner{Dirs: []string{dir}, ScanCacheTTL: 10 * time.Millisecond}
+	if len(s.Scan()) != 1 {
+		t.Fatal("setup: Scan() deveria encontrar 1 app")
+	}
+
+	if err := os.RemoveAll(appPath); err != nil {
+		t.Fatalf("RemoveAll: %v", err)
+	}
+	time.Sleep(20 * time.Millisecond)
+
+	if len(s.Scan()) != 0 {
+		t.Fatal("Scan() deveria relevar o disco depois do TTL expirar")
 	}
 }
