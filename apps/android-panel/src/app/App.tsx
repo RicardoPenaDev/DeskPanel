@@ -5,7 +5,7 @@
 // settings). A instalação real fica nos scripts da Fase 5 — este
 // componente não antecipa nenhuma delas.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useDeskPanelConnection,
   type DeskPanelConnectionDeps,
@@ -14,6 +14,7 @@ import PairingScreen from "../features/pairing/PairingScreen";
 import DashboardScreen from "../features/dashboard/DashboardScreen";
 import EditorScreen from "../features/editor/EditorScreen";
 import SettingsScreen from "../features/settings/SettingsScreen";
+import { setDimBrightness, setImmersiveMode, setKeepAwake } from "../services/deviceControl";
 
 type PanelMode = "dashboard" | "editor" | "settings";
 
@@ -26,6 +27,19 @@ export interface AppProps {
 export default function App({ connectionOverrides }: AppProps = {}) {
   const connection = useDeskPanelConnection(connectionOverrides);
   const [mode, setMode] = useState<PanelMode>("dashboard");
+
+  // Aplica keep-awake/imersivo/brilho reduzido assim que as preferências
+  // salvas terminam de carregar — sem isso, o modo imersivo (e os outros
+  // dois) só entravam em vigor se o usuário mexesse no toggle das
+  // Configurações NESTA sessão; reabrir o app sempre voltava pro padrão
+  // "sem imersivo" do Android, mostrando a barra de status por cima do
+  // recorte da câmera até alguém abrir Configurações de novo.
+  useEffect(() => {
+    if (connection.phase === "loading") return;
+    void setKeepAwake(connection.appSettings.keepAwakeEnabled);
+    void setImmersiveMode(connection.appSettings.immersiveModeEnabled);
+    void setDimBrightness(connection.appSettings.dimBrightnessEnabled);
+  }, [connection.phase, connection.appSettings]);
 
   if (connection.phase === "loading" || !connection.connectionConfig || !connection.layout) {
     return (

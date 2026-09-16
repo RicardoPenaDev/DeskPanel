@@ -112,10 +112,19 @@ describe("SettingsScreen", () => {
   });
 
   it("liga modo imersivo: chama o plugin nativo correspondente", async () => {
-    renderScreen();
+    // immersiveModeEnabled já vem ligado por padrão (painel fixo na
+    // parede) — parte de desligado aqui pra testar o caminho de "ligar".
+    renderScreen({ appSettings: { ...DEFAULT_APP_SETTINGS, immersiveModeEnabled: false } });
     fireEvent.click(screen.getByLabelText(/Modo imersivo/));
 
     await waitFor(() => expect(deviceControl.setImmersiveMode).toHaveBeenCalledWith(true));
+  });
+
+  it("desliga modo imersivo: chama o plugin nativo correspondente", async () => {
+    renderScreen();
+    fireEvent.click(screen.getByLabelText(/Modo imersivo/));
+
+    await waitFor(() => expect(deviceControl.setImmersiveMode).toHaveBeenCalledWith(false));
   });
 
   it("liga brilho reduzido: chama o plugin nativo correspondente", async () => {

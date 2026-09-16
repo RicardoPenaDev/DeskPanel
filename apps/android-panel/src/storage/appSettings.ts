@@ -14,14 +14,15 @@ export interface AppSettings {
 
 const STORAGE_KEY = "deskpanel.appSettings";
 
-// Vibração e "manter tela ligada" começam habilitadas (PROJECT.md §10.1:
-// "keep awake" é comportamento padrão do painel; vibração é "opcional" mas
-// o padrão dela ligada casa com a entrega da Fase 3/6). Imersivo e brilho
-// reduzido começam desligados — são opt-in.
+// Vibração, "manter tela ligada" e "modo imersivo" começam habilitados:
+// o painel é feito pra ficar sempre montado (parede/mesa), então uma
+// tela cheia sem barra de status por padrão é o comportamento certo
+// desde a primeira abertura, não algo que o usuário precise descobrir
+// nas Configurações. Brilho reduzido continua desligado — é opt-in.
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   vibrationEnabled: true,
   keepAwakeEnabled: true,
-  immersiveModeEnabled: false,
+  immersiveModeEnabled: true,
   dimBrightnessEnabled: false,
 };
 
