@@ -21,7 +21,17 @@ import {
   type ConnectionConfig,
 } from "../../storage/connectionConfig";
 import { loadLayout, resetLayout, saveLayout } from "../../storage/layoutStorage";
-import { readAccessToken, saveAccessToken } from "../../services/secureTokenStorage";
+import {
+  clearAccessToken,
+  readAccessToken,
+  saveAccessToken,
+} from "../../services/secureTokenStorage";
+import {
+  DEFAULT_APP_SETTINGS,
+  loadAppSettings,
+  saveAppSettings,
+  type AppSettings,
+} from "../../storage/appSettings";
 import type { DashboardConfig } from "../../storage/layout";
 import {
   WsClient,
@@ -53,9 +63,12 @@ export interface DeskPanelConnectionDeps {
   saveConnectionConfig: (config: ConnectionConfig) => Promise<void>;
   readAccessToken: (deviceId: string) => Promise<string | null>;
   saveAccessToken: (deviceId: string, token: string) => Promise<void>;
+  clearAccessToken: (deviceId: string) => Promise<void>;
   loadLayout: () => Promise<DashboardConfig>;
   saveLayout: (config: DashboardConfig) => Promise<void>;
   resetLayout: () => Promise<DashboardConfig>;
+  loadAppSettings: () => Promise<AppSettings>;
+  saveAppSettings: (settings: AppSettings) => Promise<void>;
   checkHealth: (endpoint: HttpEndpoint) => Promise<HttpResult<HealthResponse>>;
   pairDevice: (
     endpoint: HttpEndpoint,
@@ -82,9 +95,12 @@ const defaultDeps: DeskPanelConnectionDeps = {
   saveConnectionConfig,
   readAccessToken,
   saveAccessToken,
+  clearAccessToken,
   loadLayout,
   saveLayout,
   resetLayout,
+  loadAppSettings,
+  saveAppSettings,
   checkHealth,
   pairDevice: (endpoint, request) => pairDevice(endpoint, request),
   fetchActions,
@@ -100,11 +116,16 @@ export interface UseDeskPanelConnectionResult {
   macName: string | null;
   agentVersion: string | null;
   connectionError: string | null;
+  appSettings: AppSettings;
   testConnection: (host: string, port: number) => Promise<HttpResult<HealthResponse>>;
   pair: (input: PairInput) => Promise<PairOutcome>;
   executeAction: (actionId: string) => Promise<ActionResult>;
   updateLayout: (next: DashboardConfig) => Promise<void>;
   resetLayoutToDefault: () => Promise<void>;
+  updateAppSettings: (next: AppSettings) => Promise<void>;
+  updateConnectionConfig: (next: ConnectionConfig) => Promise<void>;
+  reconnect: () => void;
+  forgetPairing: () => Promise<void>;
 }
 
 function friendlyPairMessage(code: string, fallback: string): string {
@@ -142,6 +163,7 @@ export function useDeskPanelConnection(
   const [macName, setMacName] = useState<string | null>(null);
   const [agentVersion, setAgentVersion] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
 
   const wsClientRef = useRef<WsClientLike | null>(null);
 
@@ -150,13 +172,15 @@ export function useDeskPanelConnection(
     let cancelled = false;
 
     (async () => {
-      const [config, currentLayout] = await Promise.all([
+      const [config, currentLayout, settings] = await Promise.all([
         deps.loadConnectionConfig(),
         deps.loadLayout(),
+        deps.loadAppSettings(),
       ]);
       if (cancelled) return;
       setConnectionConfig(config);
       setLayout(currentLayout);
+      setAppSettings(settings);
 
       const token = await deps.readAccessToken(config.deviceId);
       if (cancelled) return;
@@ -309,6 +333,47 @@ export function useDeskPanelConnection(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const updateAppSettings = useCallback(async (next: AppSettings): Promise<void> => {
+    await deps.saveAppSettings(next);
+    setAppSettings(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Atualiza nome/host/porta a partir da tela de Configurações. Muda a
+  // identidade de connectionConfig, o que já faz o efeito de WebSocket
+  // reconectar sozinho no novo host/porta (mesmo deviceId/token — não
+  // exige repareamento, só que seja o mesmo Mac já pareado).
+  const updateConnectionConfig = useCallback(async (next: ConnectionConfig): Promise<void> => {
+    await deps.saveConnectionConfig(next);
+    setConnectionConfig(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Reconectar: reaproveita a mesma instância de WsClient (mesmo backoff,
+  // mesmas credenciais) em vez de recriar tudo — útil quando o usuário quer
+  // forçar uma nova tentativa na tela de Configurações sem esperar o
+  // backoff automático.
+  const reconnect = useCallback((): void => {
+    const client = wsClientRef.current;
+    if (!client) return;
+    client.disconnect();
+    client.connect();
+  }, []);
+
+  // Refazer pareamento: limpa só o token (mantém deviceId/host/porta/nome
+  // já digitados) e volta para a tela de pareamento. O efeito de conexão
+  // fecha o WebSocket sozinho quando accessToken vira null (dependência do
+  // efeito).
+  const forgetPairing = useCallback(async (): Promise<void> => {
+    if (connectionConfig) {
+      await deps.clearAccessToken(connectionConfig.deviceId);
+    }
+    setAccessToken(null);
+    setConnectionError(null);
+    setPhase("pairing");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectionConfig]);
+
   return {
     phase,
     status,
@@ -318,10 +383,15 @@ export function useDeskPanelConnection(
     macName,
     agentVersion,
     connectionError,
+    appSettings,
     testConnection,
     pair,
     executeAction,
     updateLayout,
     resetLayoutToDefault,
+    updateAppSettings,
+    updateConnectionConfig,
+    reconnect,
+    forgetPairing,
   };
 }

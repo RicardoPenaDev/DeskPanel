@@ -1,16 +1,18 @@
 // Casca do painel: escolhe entre a tela de pareamento (PROJECT.md
-// §10.2-A), o painel principal (§10.2-B) e o editor (§10.2-C, Fase 4)
-// conforme o estado de conexão vindo de useDeskPanelConnection e um modo
-// de UI local (dashboard ↔ editor). As Fases 5/6 acrescentam instalação
-// real e polimento — este componente não antecipa nenhuma delas.
+// §10.2-A), o painel principal (§10.2-B), o editor (§10.2-C, Fase 4) e as
+// Configurações (§10.2-D, Fase 6) conforme o estado de conexão vindo de
+// useDeskPanelConnection e um modo de UI local (dashboard ↔ editor ↔
+// settings). A instalação real fica nos scripts da Fase 5 — este
+// componente não antecipa nenhuma delas.
 
 import { useState } from "react";
 import { useDeskPanelConnection } from "../features/connection/useDeskPanelConnection";
 import PairingScreen from "../features/pairing/PairingScreen";
 import DashboardScreen from "../features/dashboard/DashboardScreen";
 import EditorScreen from "../features/editor/EditorScreen";
+import SettingsScreen from "../features/settings/SettingsScreen";
 
-type PanelMode = "dashboard" | "editor";
+type PanelMode = "dashboard" | "editor" | "settings";
 
 export default function App() {
   const connection = useDeskPanelConnection();
@@ -48,14 +50,35 @@ export default function App() {
     );
   }
 
+  if (mode === "settings") {
+    return (
+      <SettingsScreen
+        connectionConfig={connection.connectionConfig}
+        appSettings={connection.appSettings}
+        status={connection.status}
+        macName={connection.macName}
+        agentVersion={connection.agentVersion}
+        connectionError={connection.connectionError}
+        testConnection={connection.testConnection}
+        updateConnectionConfig={connection.updateConnectionConfig}
+        updateAppSettings={connection.updateAppSettings}
+        reconnect={connection.reconnect}
+        forgetPairing={connection.forgetPairing}
+        onClose={() => setMode("dashboard")}
+      />
+    );
+  }
+
   return (
     <DashboardScreen
       layout={connection.layout}
       actionsCatalog={connection.actionsCatalog}
       status={connection.status}
       macName={connection.macName}
+      vibrationEnabled={connection.appSettings.vibrationEnabled}
       executeAction={connection.executeAction}
       onOpenEditor={() => setMode("editor")}
+      onOpenSettings={() => setMode("settings")}
     />
   );
 }

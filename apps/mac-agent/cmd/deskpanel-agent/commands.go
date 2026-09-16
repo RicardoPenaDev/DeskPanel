@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -47,7 +50,13 @@ func cmdServe(args []string) error {
 		return fmt.Errorf("serve: %w", err)
 	}
 
-	logger := logging.New()
+	logger, logCloser, logErr := openServeLogger()
+	if logCloser != nil {
+		defer logCloser.Close()
+	}
+	if logErr != nil {
+		fmt.Fprintf(os.Stderr, "aviso: %v\n", logErr)
+	}
 	pairingMgr := pairing.NewManager()
 	limiter := ratelimit.NewLimiter(cfg.Security.RequestsPerMinute)
 	failures := ratelimit.NewFailureTracker(cfg.Security.FailedAuthLimit, 5*time.Minute)
@@ -180,4 +189,23 @@ func cmdStatus(args []string) error {
 	fmt.Printf("dispositivos pareados:  %d\n", res.Devices)
 	fmt.Printf("conexões ativas:        %d\n", res.Connections)
 	return nil
+}
+
+// openServeLogger abre o logger estruturado do agente em arquivo rotativo
+// (PROJECT.md §13). Se o diretório de logs não puder ser criado ou o
+// arquivo não puder ser aberto, cai para stdout — uma falha de log nunca
+// deve impedir o agente de subir.
+func openServeLogger() (*slog.Logger, io.Closer, error) {
+	path := defaultLogPath()
+	if path == "" {
+		return logging.New(), nil, fmt.Errorf("logging: não foi possível determinar o diretório home; usando stdout")
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return logging.New(), nil, fmt.Errorf("logging: não foi possível criar %s: %w", filepath.Dir(path), err)
+	}
+	logger, closer, err := logging.NewFile(path)
+	if err != nil {
+		return logger, closer, err
+	}
+	return logger, closer, nil
 }

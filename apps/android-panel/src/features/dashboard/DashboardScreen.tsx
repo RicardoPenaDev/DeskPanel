@@ -20,8 +20,10 @@ export interface DashboardScreenProps {
   actionsCatalog: Record<string, ActionSummary>;
   status: ConnectionStatus;
   macName: string | null;
+  vibrationEnabled?: boolean;
   executeAction: (actionId: string) => Promise<ActionResult>;
   onOpenEditor: () => void;
+  onOpenSettings: () => void;
 }
 
 const SWIPE_THRESHOLD_PX = 60;
@@ -32,8 +34,10 @@ export default function DashboardScreen({
   actionsCatalog,
   status,
   macName,
+  vibrationEnabled = true,
   executeAction,
   onOpenEditor,
+  onOpenSettings,
 }: DashboardScreenProps) {
   const profile =
     layout.profiles.find((p) => p.id === layout.activeProfileId) ?? layout.profiles[0];
@@ -103,6 +107,9 @@ export default function DashboardScreen({
         <button type="button" className="dp-dashboard__edit-button" onClick={onOpenEditor}>
           Editar
         </button>
+        <button type="button" className="dp-dashboard__settings-button" onClick={onOpenSettings}>
+          Configurações
+        </button>
       </header>
 
       {page && (
@@ -139,6 +146,7 @@ export default function DashboardScreen({
                   button.requireLongPress || Boolean(catalogAction?.requireLongPress)
                 }
                 unavailable={!catalogAction}
+                vibrationEnabled={vibrationEnabled}
                 onActivate={() => activate(button.actionId)}
               />
             );

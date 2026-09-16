@@ -31,6 +31,7 @@ function makeDeps(overrides: Partial<DeskPanelConnectionDeps> = {}) {
     saveConnectionConfig: vi.fn(async () => {}),
     readAccessToken: vi.fn(async () => null),
     saveAccessToken: vi.fn(async () => {}),
+    clearAccessToken: vi.fn(async () => {}),
     loadLayout: vi.fn(async () => ({
       schemaVersion: 1 as const,
       activeProfileId: "default",
@@ -42,6 +43,13 @@ function makeDeps(overrides: Partial<DeskPanelConnectionDeps> = {}) {
       activeProfileId: "default",
       profiles: [],
     })),
+    loadAppSettings: vi.fn(async () => ({
+      vibrationEnabled: true,
+      keepAwakeEnabled: true,
+      immersiveModeEnabled: false,
+      dimBrightnessEnabled: false,
+    })),
+    saveAppSettings: vi.fn(async () => {}),
     checkHealth: vi.fn(async () => ({
       ok: true as const,
       data: { status: "ok", service: "deskpanel-agent", protocolVersion: 1 },
@@ -268,5 +276,97 @@ describe("useDeskPanelConnection", () => {
 
     expect(deps.resetLayout).toHaveBeenCalledTimes(1);
     expect(result.current.layout).toEqual(layoutPadrao);
+  });
+
+  it("updateAppSettings salva e atualiza as preferências em memória", async () => {
+    const { deps } = makeDeps();
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("pairing"));
+
+    const novasPrefs = {
+      vibrationEnabled: false,
+      keepAwakeEnabled: false,
+      immersiveModeEnabled: true,
+      dimBrightnessEnabled: true,
+    };
+
+    await act(async () => {
+      await result.current.updateAppSettings(novasPrefs);
+    });
+
+    expect(deps.saveAppSettings).toHaveBeenCalledWith(novasPrefs);
+    expect(result.current.appSettings).toEqual(novasPrefs);
+  });
+
+  it("reconnect desconecta e reconecta o mesmo cliente WebSocket", async () => {
+    const { deps, fakeWsClient } = makeDeps({
+      loadConnectionConfig: vi.fn(async () => ({
+        deviceId: "device-1",
+        deviceName: "Moto G60",
+        host: "192.168.1.50",
+        port: 38121,
+      })),
+      readAccessToken: vi.fn(async () => "tok-123"),
+    });
+
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("connecting"));
+
+    act(() => {
+      result.current.reconnect();
+    });
+
+    expect(fakeWsClient.disconnect).toHaveBeenCalled();
+    expect(fakeWsClient.connect).toHaveBeenCalledTimes(2); // 1 na conexão inicial + 1 no reconnect
+  });
+
+  it("reconnect não faz nada quando ainda não há cliente WebSocket", async () => {
+    const { deps } = makeDeps();
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("pairing"));
+
+    expect(() => result.current.reconnect()).not.toThrow();
+  });
+
+  it("forgetPairing limpa o token e volta para a tela de pareamento", async () => {
+    const { deps } = makeDeps({
+      loadConnectionConfig: vi.fn(async () => ({
+        deviceId: "device-1",
+        deviceName: "Moto G60",
+        host: "192.168.1.50",
+        port: 38121,
+      })),
+      readAccessToken: vi.fn(async () => "tok-123"),
+    });
+
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("connecting"));
+
+    await act(async () => {
+      await result.current.forgetPairing();
+    });
+
+    expect(deps.clearAccessToken).toHaveBeenCalledWith("device-1");
+    expect(result.current.phase).toBe("pairing");
+  });
+
+  it("updateConnectionConfig salva e atualiza a configuração em memória", async () => {
+    const { deps } = makeDeps();
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("pairing"));
+
+    const novaConfig = {
+      deviceId: "device-1",
+      deviceName: "Painel da Sala",
+      host: "192.168.1.99",
+      port: 38121,
+    };
+
+    await act(async () => {
+      await result.current.updateConnectionConfig(novaConfig);
+    });
+
+    expect(deps.saveConnectionConfig).toHaveBeenCalledWith(novaConfig);
+    expect(result.current.connectionConfig).toEqual(novaConfig);
   });
 });

@@ -136,3 +136,97 @@ Consequências:
 - A execução real dos três scripts contra o Mac do usuário, o carregamento do LaunchAgent de verdade, o pareamento com o Moto G60 físico e o build via Gradle real ficam pendentes de autorização explícita e de rodar num Mac de verdade — não fazem parte desta mudança. `docs/STATUS.md` reflete isso como pendência da Fase 5.
 - Se o critério "Moto G60 reconecta automaticamente" exigir mudança de comportamento (ex.: reconexão mais agressiva no `wsClient`), isso é um ajuste em `apps/android-panel`, não nos scripts de instalação.
 - `--purge` sem `--yes` é interativo por desenho; scripts de automação/CI que precisarem purgar dados devem passar `--yes` explicitamente.
+
+## ADR-0007 — Polimento do MVP: rotação de logs, doctor completo, haptics oficial, controles nativos de tela
+Data: 2026-09-16
+Status: aceita
+
+Contexto:
+`PROJECT.md` §17 (Fase 6) pede: correções do teste físico (impossível sem
+hardware real — ver ressalva abaixo), feedback háptico, diagnóstico de
+conexão, rotação de logs, acessibilidade básica, mais ícones locais,
+revisão de segurança e versão `0.1.0`. §10.2-D especifica a tela de
+Configurações completa (reconectar, refazer pareamento, vibração, manter
+tela ligada, modo imersivo, brilho reduzido, diagnóstico, versões).
+
+Decisão:
+- **Rotação de logs**: implementada dentro do próprio agente
+  (`internal/logging/rotate.go`, `RotatingWriter`), não delegada ao
+  `launchd`/shell — redirecionar `stdout` para um arquivo via
+  `StandardOutPath` no LaunchAgent (como a Fase 5 já fazia) nunca rotaciona
+  sozinho. `cmdServe` agora abre o logger com `logging.NewFile` em
+  `~/Library/Logs/DeskPanel/agent.log`, ~5 MiB por arquivo, até 3 arquivos
+  (PROJECT.md §13); se o arquivo não puder ser aberto, cai para stdout e
+  reporta o erro — nunca impede o agente de subir.
+- **`doctor` completo**: as checagens que faltavam (§13) foram adicionadas
+  sem tocar nas existentes — porta livre/ocupada (distinguindo "é o
+  próprio agente" via socket administrativo de "outro processo"), status
+  do LaunchAgent (`launchctl print`, só no macOS), endereços IPv4 locais
+  alcançáveis (reaproveita `internal/netguard.IsPrivateOrLoopback`) e
+  versão do protocolo/agente.
+- **Vibração**: plugin oficial `@capacitor/haptics` (mesma major version 6
+  dos outros plugins Capacitor já usados), não um plugin nativo próprio —
+  ao contrário do token (Keystore) e dos controles de janela abaixo, não
+  há nenhuma lógica específica do DeskPanel aqui, só chamar uma API padrão
+  do sistema. `services/haptics.ts` expõe `vibrateSuccess`/`vibrateError`,
+  cada uma engolindo erro silenciosamente (aparelho sem motor de vibração
+  não pode derrubar a execução de uma ação). Controlado por
+  `AppSettings.vibrationEnabled` (padrão ligado), passado como prop
+  `vibrationEnabled` até `DashboardButton` — sem estado global implícito,
+  mesmo padrão de dependência explícita já usado no resto do app.
+- **Manter tela ligada / modo imersivo / brilho reduzido**: um plugin
+  Capacitor local novo, `DeviceControlPlugin.java` (mesmo padrão do
+  `SecureTokenStoragePlugin` da Fase 3 — registrado em `MainActivity`, sem
+  publicar como pacote separado). Nenhum dos três pede permissão especial
+  do Android: "keep awake" e "imersivo" são flags da própria janela
+  (`WindowManager.LayoutParams`/`WindowInsetsController`), e o brilho
+  reduzido usa `LayoutParams.screenBrightness` (atributo da janela do
+  app), não `Settings.System` — por isso não precisa de
+  `android.permission.WRITE_SETTINGS`, que exigiria um fluxo de permissão
+  especial fora do MVP. Modo imersivo usa `WindowInsetsController` em
+  Android 11+ (API 30) com fallback para as flags legadas de
+  `SystemUiVisibility` em versões mais antigas.
+- **Tela de Configurações** (`features/settings/SettingsScreen.tsx`): usa
+  estado local com um botão "Salvar" explícito para nome/host/porta (mesmo
+  padrão de `PairingScreen`, não o padrão totalmente controlado do
+  `EditorScreen` — aqui não há necessidade de refletir cada tecla de volta
+  no app em tempo real). Os toggles (vibração/keep-awake/imersivo/brilho)
+  aplicam na hora: persistem via `useDeskPanelConnection.updateAppSettings`
+  e, para os três que têm efeito nativo, chamam `DeviceControlPlugin` na
+  sequência. "Reconectar" reaproveita a mesma instância de `WsClient`
+  (`disconnect()`+`connect()`) em vez de recriar o hook inteiro.  "Refazer
+  pareamento" limpa só o token (mantém deviceId/host/porta/nome já
+  digitados) e volta para `PairingScreen` — não é preciso digitar tudo de
+  novo, só o código. "Diagnóstico de conexão" reaproveita `checkHealth` já
+  existente, medindo a latência no cliente com `performance.now()`.
+- **Acessibilidade básica**: focus-visible global para todo elemento
+  interativo (`button`, `input`, `[role="tab"]`, `[tabindex]`) em
+  `global.css` — antes só os campos de formulário tinham contorno de foco
+  visível; `role="alert"` no erro do botão do painel, para leitor de tela
+  anunciar imediatamente. O resto (aria-label nos botões, `aria-hidden` nos
+  ícones decorativos, `role="status"`/`aria-live` no indicador de conexão,
+  `role="tablist"`/`role="tab"` no indicador de página, `lang="pt-BR"`,
+  toque mínimo de 48px) já vinha das Fases 3/4 e foi só conferido, não
+  refeito.
+- **Versão 0.1.0**: `Makefile` ganhou `VERSION := 0.1.0` e passa
+  `-ldflags "-X main.version=$(VERSION)"` em `build-agent`;
+  `scripts/install-macos.sh` faz o mesmo na sua própria chamada de
+  `go build`. `apps/android-panel/package.json`/`version.ts` já estavam em
+  `0.1.0` desde o bootstrap.
+
+Consequências:
+- **"Correções do teste físico" não foi feito** — não existe teste físico
+  ainda para corrigir (Fase 5 não rodou de verdade no Mac/Moto G60 real,
+  por exigir autorização explícita do proprietário, `PROJECT.md` §19.3).
+  Essa entrega da Fase 6 fica pendente até depois da instalação real.
+- `DeviceControlPlugin.java` e o registro dele em `MainActivity.java` têm
+  a mesma ressalva do `SecureTokenStoragePlugin` (ADR-0004): não compilados
+  nem testados neste ambiente (sem Android SDK/Gradle). A revisão de
+  segurança (nova seção em `docs/SECURITY.md`) documenta essa ressalva
+  explicitamente.
+- Tag local `v0.1.0` **não foi criada** — `PROJECT.md` §17 exige
+  autorização explícita do proprietário para isso, separada da autorização
+  geral de avançar de fase.
+- Os critérios de aceite do §18 que dependem de hardware físico (APK
+  instalado no Moto G60, teste contínuo de duas horas, etc.) continuam
+  pendentes — ver `docs/STATUS.md`.

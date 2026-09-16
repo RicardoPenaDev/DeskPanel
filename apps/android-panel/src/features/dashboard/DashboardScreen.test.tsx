@@ -34,6 +34,7 @@ describe("DashboardScreen", () => {
         macName="MacBook de Ricardo"
         executeAction={vi.fn()}
         onOpenEditor={vi.fn()}
+        onOpenSettings={vi.fn()}
       />,
     );
 
@@ -51,6 +52,7 @@ describe("DashboardScreen", () => {
         macName="Mac"
         executeAction={vi.fn()}
         onOpenEditor={vi.fn()}
+        onOpenSettings={vi.fn()}
       />,
     );
 
@@ -75,6 +77,7 @@ describe("DashboardScreen", () => {
         macName="Mac"
         executeAction={executeAction}
         onOpenEditor={vi.fn()}
+        onOpenSettings={vi.fn()}
       />,
     );
 
@@ -95,6 +98,7 @@ describe("DashboardScreen", () => {
         macName="Mac"
         executeAction={vi.fn()}
         onOpenEditor={vi.fn()}
+        onOpenSettings={vi.fn()}
       />,
     );
 
@@ -117,6 +121,7 @@ describe("DashboardScreen", () => {
         macName="Mac"
         executeAction={vi.fn()}
         onOpenEditor={vi.fn()}
+        onOpenSettings={vi.fn()}
       />,
     );
 
@@ -137,11 +142,30 @@ describe("DashboardScreen", () => {
         macName="Mac"
         executeAction={vi.fn()}
         onOpenEditor={onOpenEditor}
+        onOpenSettings={vi.fn()}
       />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Editar" }));
     expect(onOpenEditor).toHaveBeenCalledTimes(1);
+  });
+
+  it("abre as configurações ao clicar em 'Configurações'", () => {
+    const onOpenSettings = vi.fn();
+    render(
+      <DashboardScreen
+        layout={defaultDashboardConfig()}
+        actionsCatalog={{}}
+        status="connected"
+        macName="Mac"
+        executeAction={vi.fn()}
+        onOpenEditor={vi.fn()}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Configurações" }));
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
   describe("toque prolongado em slot vazio", () => {
@@ -167,6 +191,7 @@ describe("DashboardScreen", () => {
           macName="Mac"
           executeAction={vi.fn()}
           onOpenEditor={onOpenEditor}
+          onOpenSettings={vi.fn()}
         />,
       );
 
@@ -194,6 +219,7 @@ describe("DashboardScreen", () => {
           macName="Mac"
           executeAction={vi.fn()}
           onOpenEditor={onOpenEditor}
+          onOpenSettings={vi.fn()}
         />,
       );
 

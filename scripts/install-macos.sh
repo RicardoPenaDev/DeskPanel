@@ -18,6 +18,7 @@ set -euo pipefail
 
 APP_NAME="DeskPanel"
 LAUNCH_LABEL="dev.ricardopena.deskpanel.agent"
+AGENT_VERSION="0.1.0"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AGENT_DIR="$REPO_ROOT/apps/mac-agent"
 
@@ -85,8 +86,8 @@ else
 		echo "erro: 'go' não encontrado no PATH. Instale Go 1.23+ ou use --binary <caminho>." >&2
 		exit 1
 	fi
-	echo "compilando deskpanel-agent com 'go build'..."
-	(cd "$AGENT_DIR" && go build -o bin/deskpanel-agent ./cmd/deskpanel-agent)
+	echo "compilando deskpanel-agent com 'go build' (versão $AGENT_VERSION)..."
+	(cd "$AGENT_DIR" && go build -ldflags "-X main.version=$AGENT_VERSION" -o bin/deskpanel-agent ./cmd/deskpanel-agent)
 	BINARY_PATH="$BUILT_BINARY"
 fi
 

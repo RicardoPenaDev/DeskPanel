@@ -14,6 +14,17 @@
   box-sizing: border-box;
 }
 
+/* Acessibilidade básica: foco visível consistente em todo elemento
+   interativo (teclado, D-pad, switch access) — sem depender de cada
+   componente declarar o próprio :focus. */
+button:focus-visible,
+input:focus-visible,
+[role="tab"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--dp-accent);
+  outline-offset: 2px;
+}
+
 html,
 body,
 #root {

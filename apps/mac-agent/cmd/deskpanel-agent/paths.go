@@ -43,3 +43,13 @@ func defaultAdminSocketPath() string {
 	}
 	return filepath.Join(dir, "agent.sock")
 }
+
+// defaultLogPath retorna ~/Library/Logs/DeskPanel/agent.log (PROJECT.md
+// §7.2/§13), separado do diretório de dados de defaultAppDir.
+func defaultLogPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, "Library", "Logs", "DeskPanel", "agent.log")
+}

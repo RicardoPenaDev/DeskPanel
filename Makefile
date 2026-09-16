@@ -3,6 +3,7 @@
 
 AGENT_DIR := apps/mac-agent
 PANEL_DIR := apps/android-panel
+VERSION := 0.1.0
 
 ## setup: instala as dependências dos dois apps.
 setup:
@@ -37,7 +38,7 @@ lint-android:
 
 ## build-agent: compila o binário do agente.
 build-agent:
-	cd $(AGENT_DIR) && go build -o bin/deskpanel-agent ./cmd/deskpanel-agent
+	cd $(AGENT_DIR) && go build -ldflags "-X main.version=$(VERSION)" -o bin/deskpanel-agent ./cmd/deskpanel-agent
 
 ## build-apk: gera o APK do painel Android (Fase 5).
 build-apk:
