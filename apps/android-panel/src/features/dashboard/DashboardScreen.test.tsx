@@ -168,6 +168,135 @@ describe("DashboardScreen", () => {
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
+  describe("folha de controles (Editar/Configurações escondidos)", () => {
+    function sheet() {
+      return document.querySelector(".dp-dashboard__sheet") as HTMLElement;
+    }
+
+    it("começa escondida (sem a classe --open)", () => {
+      render(
+        <DashboardScreen
+          layout={defaultDashboardConfig()}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      expect(sheet().className).not.toContain("dp-dashboard__sheet--open");
+    });
+
+    it("um arrasto vertical para cima revela a folha em vez de trocar de página", () => {
+      const layout = defaultDashboardConfig();
+      render(
+        <DashboardScreen
+          layout={layout}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      const main = screen.getByRole("main");
+      fireEvent.touchStart(main, { touches: [{ clientX: 300, clientY: 800 }] });
+      fireEvent.touchEnd(main, { changedTouches: [{ clientX: 300, clientY: 600 }] });
+
+      expect(sheet().className).toContain("dp-dashboard__sheet--open");
+      // não deve ter trocado de página — o gesto foi tratado como vertical.
+      expect(screen.getByText(layout.profiles[0].pages[0].name)).toBeInTheDocument();
+    });
+
+    it("um arrasto vertical para baixo esconde a folha aberta", () => {
+      render(
+        <DashboardScreen
+          layout={defaultDashboardConfig()}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      const main = screen.getByRole("main");
+      fireEvent.touchStart(main, { touches: [{ clientX: 300, clientY: 800 }] });
+      fireEvent.touchEnd(main, { changedTouches: [{ clientX: 300, clientY: 600 }] });
+      expect(sheet().className).toContain("dp-dashboard__sheet--open");
+
+      fireEvent.touchStart(main, { touches: [{ clientX: 300, clientY: 600 }] });
+      fireEvent.touchEnd(main, { changedTouches: [{ clientX: 300, clientY: 800 }] });
+      expect(sheet().className).not.toContain("dp-dashboard__sheet--open");
+    });
+
+    it("tocar na alcinha alterna a folha", () => {
+      render(
+        <DashboardScreen
+          layout={defaultDashboardConfig()}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Mostrar controles" }));
+      expect(sheet().className).toContain("dp-dashboard__sheet--open");
+
+      fireEvent.click(screen.getByRole("button", { name: "Mostrar controles" }));
+      expect(sheet().className).not.toContain("dp-dashboard__sheet--open");
+    });
+
+    it("tocar no véu escuro fecha a folha aberta", () => {
+      render(
+        <DashboardScreen
+          layout={defaultDashboardConfig()}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Mostrar controles" }));
+      expect(sheet().className).toContain("dp-dashboard__sheet--open");
+
+      fireEvent.click(document.querySelector(".dp-dashboard__scrim") as HTMLElement);
+      expect(sheet().className).not.toContain("dp-dashboard__sheet--open");
+    });
+
+    it("clicar em 'Editar' fecha a folha e chama onOpenEditor", () => {
+      const onOpenEditor = vi.fn();
+      render(
+        <DashboardScreen
+          layout={defaultDashboardConfig()}
+          actionsCatalog={{}}
+          status="connected"
+          macName="Mac"
+          executeAction={vi.fn()}
+          onOpenEditor={onOpenEditor}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Mostrar controles" }));
+      fireEvent.click(screen.getByRole("button", { name: "Editar" }));
+
+      expect(onOpenEditor).toHaveBeenCalledTimes(1);
+      expect(sheet().className).not.toContain("dp-dashboard__sheet--open");
+    });
+  });
+
   describe("toque prolongado em slot vazio", () => {
     beforeEach(() => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
