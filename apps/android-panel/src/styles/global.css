@@ -33,7 +33,14 @@ body,
 }
 
 body {
-  background: var(--dp-bg);
+  /* Sem papel de parede real, então simula a profundidade "desfocada" da
+     tela do iPhone com manchas suaves de cor em vez de fundo chapado —
+     mais barato que backdrop-filter e não muda com o tema. */
+  background:
+    radial-gradient(circle at 18% 15%, rgba(79, 140, 255, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 20%, rgba(177, 126, 240, 0.1), transparent 38%),
+    radial-gradient(circle at 30% 90%, rgba(53, 195, 125, 0.08), transparent 42%), var(--dp-bg);
+  background-attachment: fixed;
   color: var(--dp-text);
   font-family:
     system-ui,
@@ -224,35 +231,43 @@ body {
   position: relative;
   min-height: 48px;
   min-width: 48px;
-  border-radius: 12px;
-  border: 1px solid #2a2f36;
-  background: var(--dp-surface);
+  border-radius: 22px;
+  border: none;
+  background: transparent;
   color: var(--dp-text);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 0.85rem;
   padding: 8px;
   touch-action: manipulation;
+  transition:
+    transform 0.12s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .dp-button--pressed {
   transform: scale(0.96);
-  border-color: var(--dp-accent);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .dp-button--running {
   opacity: 0.8;
 }
 
+/* Sucesso/erro pintam o fundo (não borda) — o único momento em que o
+   botão ganha uma "caixa", só durante o feedback transitório. */
 .dp-button--success {
-  border-color: var(--dp-success);
+  background: rgba(53, 195, 125, 0.16);
+  box-shadow: 0 0 0 2px var(--dp-success);
 }
 
 .dp-button--error {
-  border-color: var(--dp-danger);
+  background: rgba(255, 92, 92, 0.16);
+  box-shadow: 0 0 0 2px var(--dp-danger);
 }
 
 .dp-button:disabled {
@@ -270,24 +285,27 @@ body {
   color: var(--dp-danger);
 }
 
-.dp-button--blue {
-  border-color: #4f8cff;
+/* Cor de categoria (PROJECT.md §10.3): um traço fino embaixo do ícone em
+   vez de preencher o botão inteiro — mantém o visual "só ícone" mesmo
+   para botões categorizados. */
+.dp-button--blue .dp-button__icon {
+  filter: drop-shadow(0 2px 6px rgba(79, 140, 255, 0.55));
 }
 
-.dp-button--green {
-  border-color: #35c37d;
+.dp-button--green .dp-button__icon {
+  filter: drop-shadow(0 2px 6px rgba(53, 195, 125, 0.55));
 }
 
-.dp-button--orange {
-  border-color: #f5b942;
+.dp-button--orange .dp-button__icon {
+  filter: drop-shadow(0 2px 6px rgba(245, 185, 66, 0.55));
 }
 
-.dp-button--red {
-  border-color: #ff5c5c;
+.dp-button--red .dp-button__icon {
+  filter: drop-shadow(0 2px 6px rgba(255, 92, 92, 0.55));
 }
 
-.dp-button--purple {
-  border-color: #b17ef0;
+.dp-button--purple .dp-button__icon {
+  filter: drop-shadow(0 2px 6px rgba(177, 126, 240, 0.55));
 }
 
 /* --- Editor do painel (PROJECT.md §10.2-C, Fase 4) ---------------------- */
@@ -412,9 +430,11 @@ body {
 
 .dp-editor__slot {
   min-height: 48px;
-  border-radius: 10px;
-  border: 1px dashed #2a2f36;
-  background: var(--dp-surface);
+  border-radius: 18px;
+  border: none;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: var(--dp-text);
   display: flex;
   flex-direction: column;
@@ -425,14 +445,18 @@ body {
   padding: 6px;
 }
 
+/* Vazio precisa de uma borda de verdade — é a única pista de "toque para
+   adicionar" num slot sem ícone nem label. */
 .dp-editor__slot--empty {
-  border-style: dashed;
+  border: 1px dashed #2a2f36;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   color: var(--dp-muted);
 }
 
 .dp-editor__slot--selected {
-  border-color: var(--dp-accent);
-  border-style: solid;
+  border: 2px solid var(--dp-accent);
 }
 
 .dp-editor__panel {
