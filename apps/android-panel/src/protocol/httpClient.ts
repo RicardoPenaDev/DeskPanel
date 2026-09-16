@@ -18,6 +18,15 @@ export interface ActionSummary {
   icon: string;
   kind: string;
   requireLongPress: boolean;
+  // Preenchido no cliente (não vem do /actions) quando esta entrada é um
+  // app da varredura ao vivo de /Applications — ver fetchAppIcon.
+  iconUrl?: string;
+}
+
+export interface AppSummary {
+  id: string;
+  name: string;
+  hasIcon: boolean;
 }
 
 export interface StateSnapshot {
@@ -176,4 +185,43 @@ export function fetchState(
     method: "GET",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+}
+
+/**
+ * fetchApps busca a varredura ao vivo de aplicativos instalados no Mac
+ * (/Applications e afins) — a lista completa que o editor oferece para
+ * criar um atalho, além do catálogo curado de /actions.
+ */
+export function fetchApps(
+  endpoint: HttpEndpoint,
+  accessToken: string,
+): Promise<HttpResult<AppSummary[]>> {
+  return fetchJson<AppSummary[]>(`${baseUrl(endpoint)}/apps`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+/**
+ * fetchAppIcon busca o PNG do ícone real de um app e devolve uma object
+ * URL local pronta para <img src>. Não usa fetchJson (resposta binária,
+ * não JSON) nem token na URL (o <img> nunca vê o Bearer) — falha vira
+ * `null` em vez de lançar, já que um ícone ausente nunca deve quebrar a
+ * tela.
+ */
+export async function fetchAppIcon(
+  endpoint: HttpEndpoint,
+  accessToken: string,
+  appId: string,
+): Promise<string | null> {
+  try {
+    const response = await fetch(`${baseUrl(endpoint)}/apps/${encodeURIComponent(appId)}/icon`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
 }

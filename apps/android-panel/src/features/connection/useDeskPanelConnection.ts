@@ -8,8 +8,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   checkHealth,
   fetchActions,
+  fetchAppIcon,
+  fetchApps,
   pairDevice,
   type ActionSummary,
+  type AppSummary,
   type HealthResponse,
   type HttpEndpoint,
   type HttpResult,
@@ -78,6 +81,15 @@ export interface DeskPanelConnectionDeps {
     endpoint: HttpEndpoint,
     accessToken: string,
   ) => Promise<HttpResult<ActionSummary[]>>;
+  // Varredura ao vivo de /Applications no Mac — mesclada no mesmo
+  // actionsCatalog para o editor deixar escolher qualquer app instalado,
+  // não só os curados em config.json.
+  fetchApps: (endpoint: HttpEndpoint, accessToken: string) => Promise<HttpResult<AppSummary[]>>;
+  fetchAppIcon: (
+    endpoint: HttpEndpoint,
+    accessToken: string,
+    appId: string,
+  ) => Promise<string | null>;
   createWsClient: (
     config: {
       host: string;
@@ -104,6 +116,8 @@ const defaultDeps: DeskPanelConnectionDeps = {
   checkHealth,
   pairDevice: (endpoint, request) => pairDevice(endpoint, request),
   fetchActions,
+  fetchApps,
+  fetchAppIcon,
   createWsClient: (config, handlers) => new WsClient(config, handlers),
 };
 
@@ -248,19 +262,55 @@ export function useDeskPanelConnection(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionConfig, accessToken]);
 
-  // Busca o catálogo autoritativo de ações do Mac assim que autenticado.
+  // Busca o catálogo autoritativo de ações do Mac assim que autenticado, e
+  // mescla nele a varredura ao vivo de /Applications: cada app instalado
+  // vira uma entrada open_app no mesmo catálogo, para o editor deixar
+  // escolher qualquer um. As duas buscas terminam num único setState para
+  // não haver corrida entre elas (uma nunca sobrescreve a outra).
   useEffect(() => {
     if (phase !== "ready" || !connectionConfig || !accessToken) return;
     let cancelled = false;
+    const endpoint = { host: connectionConfig.host, port: connectionConfig.port };
 
-    deps
-      .fetchActions({ host: connectionConfig.host, port: connectionConfig.port }, accessToken)
-      .then((result) => {
-        if (cancelled || !result.ok) return;
-        const catalog: Record<string, ActionSummary> = {};
-        for (const action of result.data) catalog[action.id] = action;
-        setActionsCatalog(catalog);
-      });
+    Promise.all([
+      deps.fetchActions(endpoint, accessToken),
+      deps.fetchApps(endpoint, accessToken),
+    ]).then(([actionsResult, appsResult]) => {
+      // Uma falha passageira de rede nunca deve apagar um catálogo que já
+      // tinha carregado — sem isso, uma única requisição perdida deixava o
+      // painel inteiro "indisponível" até o app ser reaberto (este efeito
+      // só roda uma vez por conexão, nunca tenta de novo sozinho).
+      if (cancelled || !actionsResult.ok) return;
+
+      const catalog: Record<string, ActionSummary> = {};
+      for (const action of actionsResult.data) catalog[action.id] = action;
+
+      const apps = appsResult.ok ? appsResult.data : [];
+      for (const app of apps) {
+        catalog[app.id] = {
+          id: app.id,
+          label: app.name,
+          icon: "app",
+          kind: "open_app",
+          requireLongPress: false,
+        };
+      }
+      setActionsCatalog(catalog);
+
+      // Ícones reais chegam depois, um a um, sem travar a exibição do
+      // catálogo — cada app sem ícone continua com o ícone genérico.
+      for (const app of apps) {
+        if (!app.hasIcon) continue;
+        deps.fetchAppIcon(endpoint, accessToken, app.id).then((iconUrl) => {
+          if (cancelled || !iconUrl) return;
+          setActionsCatalog((prev) => {
+            const existing = prev[app.id];
+            if (!existing) return prev;
+            return { ...prev, [app.id]: { ...existing, iconUrl } };
+          });
+        });
+      }
+    });
 
     return () => {
       cancelled = true;

@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"deskpanel-agent/internal/actions"
+	"deskpanel-agent/internal/appscan"
 	"deskpanel-agent/internal/devices"
 	"deskpanel-agent/internal/pairing"
 	"deskpanel-agent/internal/ratelimit"
@@ -16,6 +17,7 @@ import (
 // Server monta o roteador HTTP completo do agente.
 type Server struct {
 	Actions      []actions.Action
+	Apps         *appscan.Scanner
 	Devices      *devices.Store
 	Pairing      *pairing.Manager
 	Limiter      *ratelimit.Limiter
@@ -36,6 +38,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/version", VersionHandler(s.AgentVersion))
 	mux.HandleFunc("POST /api/v1/pair", PairHandler(s.Pairing, s.Devices, s.Failures))
 	mux.Handle("GET /api/v1/actions", requireBearerToken(s.Devices)(ActionsHandler(s.Actions)))
+	mux.Handle("GET /api/v1/apps", requireBearerToken(s.Devices)(AppsHandler(s.Apps)))
+	mux.Handle("GET /api/v1/apps/{id}/icon", requireBearerToken(s.Devices)(AppIconHandler(s.Apps)))
 	mux.Handle("GET /api/v1/state", requireBearerToken(s.Devices)(StateHandler(s.MacName, s.AgentVersion)))
 	if s.WSHandler != nil {
 		mux.Handle("GET /api/v1/ws", s.WSHandler)
@@ -45,5 +49,11 @@ func (s *Server) Handler() http.Handler {
 	handler = requirePrivateNetwork(handler)
 	handler = rateLimit(s.Limiter)(handler)
 	handler = maxBody(handler)
+	// cors é o middleware mais externo: precisa rodar (e setar os
+	// cabeçalhos) antes de qualquer outro, inclusive nas respostas de
+	// erro (403 de rede, 429 de rate limit, 401 de auth) — senão o
+	// WebView bloqueia essas respostas do mesmo jeito e o app não
+	// consegue nem saber que foi um erro de auth/rede real.
+	handler = cors(handler)
 	return handler
 }

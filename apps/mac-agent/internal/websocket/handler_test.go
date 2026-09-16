@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	"github.com/coder/websocket/wsjson"
 
 	"deskpanel-agent/internal/actions"
+	"deskpanel-agent/internal/appscan"
 	"deskpanel-agent/internal/auth"
 	"deskpanel-agent/internal/devices"
 	"deskpanel-agent/internal/executor"
@@ -227,6 +229,126 @@ func TestWebSocket_ExecuteAction_UnknownAction(t *testing.T) {
 	readEnvelope(t, ctx, conn) // state.snapshot
 
 	sendEnvelope(t, ctx, conn, protocol.TypeActionExecute, "req-1", actionExecutePayload{ActionID: "não-existe"})
+
+	env := readEnvelope(t, ctx, conn)
+	if env.Type != protocol.TypeError {
+		t.Fatalf("Type = %q, want %q", env.Type, protocol.TypeError)
+	}
+	var payload errorPayload
+	_ = json.Unmarshal(env.Payload, &payload)
+	if payload.Code != protocol.ErrActionNotFound {
+		t.Errorf("Code = %q, want %q", payload.Code, protocol.ErrActionNotFound)
+	}
+}
+
+// recordingExecutor guarda a última ação executada, para inspecionar os
+// parâmetros que o handler efetivamente montou.
+type recordingExecutor struct {
+	last actions.Action
+}
+
+func (r *recordingExecutor) Execute(ctx context.Context, action actions.Action) executor.Result {
+	r.last = action
+	return executor.Result{Status: "success"}
+}
+
+// writeFakeApp cria um .app mínimo com Info.plist real, o suficiente
+// para appscan.Scanner reconhecer via plutil.
+func writeFakeApp(t *testing.T, dir, appName, bundleName string) {
+	t.Helper()
+	appPath := filepath.Join(dir, appName+".app")
+	if err := os.MkdirAll(filepath.Join(appPath, "Contents"), 0o755); err != nil {
+		t.Fatalf("MkdirAll: %v", err)
+	}
+	plist := `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>` + bundleName + `</string>
+</dict>
+</plist>
+`
+	if err := os.WriteFile(filepath.Join(appPath, "Contents", "Info.plist"), []byte(plist), 0o644); err != nil {
+		t.Fatalf("WriteFile Info.plist: %v", err)
+	}
+}
+
+// TestWebSocket_ExecuteAction_DynamicAppFromScan prova que um app que
+// nunca esteve no config.json (só apareceu na varredura ao vivo de
+// /Applications) consegue ser executado como open_app — e que o
+// executor recebe o caminho do bundle, nunca um nome/arg vindo do
+// Android (PROJECT.md §7.4).
+func TestWebSocket_ExecuteAction_DynamicAppFromScan(t *testing.T) {
+	dir := t.TempDir()
+	writeFakeApp(t, dir, "MeuApp", "Meu App")
+
+	rec := &recordingExecutor{}
+	h, _ := newTestHandler(t, rec)
+	scanner := &appscan.Scanner{Dirs: []string{dir}}
+	h.Apps = scanner
+
+	apps := scanner.Scan()
+	if len(apps) != 1 {
+		t.Fatalf("setup: Scan() encontrou %d apps", len(apps))
+	}
+	appID := apps[0].ID
+
+	server := httptest.NewServer(h)
+	defer server.Close()
+
+	conn := dial(t, server)
+	ctx := context.Background()
+	authenticate(t, ctx, conn, "dev-1", testToken)
+	readEnvelope(t, ctx, conn) // state.snapshot
+
+	sendEnvelope(t, ctx, conn, protocol.TypeActionExecute, "req-1", actionExecutePayload{ActionID: appID})
+
+	readEnvelope(t, ctx, conn) // action.started
+	result := readEnvelope(t, ctx, conn)
+	if result.Type != protocol.TypeActionResult {
+		t.Fatalf("Type = %q, want %q", result.Type, protocol.TypeActionResult)
+	}
+	var payload actionResultPayload
+	_ = json.Unmarshal(result.Payload, &payload)
+	if payload.Status != "success" {
+		t.Fatalf("Status = %q, want success", payload.Status)
+	}
+
+	if rec.last.Kind != actions.KindOpenApp {
+		t.Fatalf("Kind = %q, want %q", rec.last.Kind, actions.KindOpenApp)
+	}
+	if rec.last.Parameters["application"] != apps[0].Path {
+		t.Errorf("application = %v, want %q", rec.last.Parameters["application"], apps[0].Path)
+	}
+}
+
+// TestWebSocket_ExecuteAction_UninstalledAppRejected prova que um ID de
+// app que sumiu do disco entre a listagem e a execução é rejeitado como
+// ação desconhecida, nunca executado com dados obsoletos.
+func TestWebSocket_ExecuteAction_UninstalledAppRejected(t *testing.T) {
+	dir := t.TempDir()
+	writeFakeApp(t, dir, "Efemero", "App Efêmero")
+
+	h, _ := newTestHandler(t, &executor.FakeExecutor{})
+	scanner := &appscan.Scanner{Dirs: []string{dir}}
+	h.Apps = scanner
+
+	apps := scanner.Scan()
+	appID := apps[0].ID
+	if err := os.RemoveAll(filepath.Join(dir, "Efemero.app")); err != nil {
+		t.Fatalf("RemoveAll: %v", err)
+	}
+
+	server := httptest.NewServer(h)
+	defer server.Close()
+
+	conn := dial(t, server)
+	ctx := context.Background()
+	authenticate(t, ctx, conn, "dev-1", testToken)
+	readEnvelope(t, ctx, conn) // state.snapshot
+
+	sendEnvelope(t, ctx, conn, protocol.TypeActionExecute, "req-1", actionExecutePayload{ActionID: appID})
 
 	env := readEnvelope(t, ctx, conn)
 	if env.Type != protocol.TypeError {

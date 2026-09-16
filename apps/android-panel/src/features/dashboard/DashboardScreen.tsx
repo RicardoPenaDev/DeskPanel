@@ -141,6 +141,7 @@ export default function DashboardScreen({
                 key={button.id}
                 label={button.labelOverride ?? catalogAction?.label ?? button.actionId}
                 icon={button.iconOverride ?? catalogAction?.icon}
+                iconUrl={button.iconOverride ? undefined : catalogAction?.iconUrl}
                 color={button.color ?? "neutral"}
                 requireLongPress={
                   button.requireLongPress || Boolean(catalogAction?.requireLongPress)

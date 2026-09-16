@@ -59,6 +59,8 @@ function makeDeps(overrides: Partial<DeskPanelConnectionDeps> = {}) {
       data: { deviceId: "device-1", accessToken: "tok-123", protocolVersion: 1 },
     })),
     fetchActions: vi.fn(async () => ({ ok: true as const, data: [] })),
+    fetchApps: vi.fn(async () => ({ ok: true as const, data: [] })),
+    fetchAppIcon: vi.fn(async () => null),
     createWsClient: vi.fn((_config, handlers: WsClientHandlers) => {
       Object.assign(wsHandlers, handlers);
       return fakeWsClient;
@@ -111,6 +113,133 @@ describe("useDeskPanelConnection", () => {
 
     await waitFor(() => expect(result.current.phase).toBe("ready"));
     await waitFor(() => expect(result.current.actionsCatalog["app.chrome"]).toBeDefined());
+  });
+
+  it("mescla apps da varredura ao vivo no actionsCatalog e busca o ícone real depois", async () => {
+    const { deps, wsHandlers } = makeDeps({
+      loadConnectionConfig: vi.fn(async () => ({
+        deviceId: "device-1",
+        deviceName: "Moto G60",
+        host: "192.168.1.50",
+        port: 38121,
+      })),
+      readAccessToken: vi.fn(async () => "tok-existente"),
+      fetchActions: vi.fn(async () => ({
+        ok: true as const,
+        data: [
+          {
+            id: "app.chrome",
+            label: "Chrome",
+            icon: "chrome",
+            kind: "open_app",
+            requireLongPress: false,
+          },
+        ],
+      })),
+      fetchApps: vi.fn(async () => ({
+        ok: true as const,
+        data: [
+          { id: "app:aaaa", name: "Notion", hasIcon: true },
+          { id: "app:bbbb", name: "Calculadora", hasIcon: false },
+        ],
+      })),
+      fetchAppIcon: vi.fn(async (_endpoint, _token, appId: string) =>
+        appId === "app:aaaa" ? "blob:fake-notion-icon" : null,
+      ),
+    });
+
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("connecting"));
+
+    act(() => {
+      wsHandlers.onStatusChange?.("connected");
+    });
+
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    await waitFor(() => expect(result.current.actionsCatalog["app:aaaa"]).toBeDefined());
+
+    // A ação curada de config.json sobrevive à mesclagem.
+    expect(result.current.actionsCatalog["app.chrome"]?.label).toBe("Chrome");
+
+    // App sem ícone fica com o catálogo mesclado mas sem iconUrl.
+    expect(result.current.actionsCatalog["app:bbbb"]?.label).toBe("Calculadora");
+    expect(result.current.actionsCatalog["app:bbbb"]?.iconUrl).toBeUndefined();
+
+    // App com ícone recebe o iconUrl assim que fetchAppIcon resolve.
+    await waitFor(() =>
+      expect(result.current.actionsCatalog["app:aaaa"]?.iconUrl).toBe("blob:fake-notion-icon"),
+    );
+    expect(deps.fetchAppIcon).toHaveBeenCalledWith(
+      { host: "192.168.1.50", port: 38121 },
+      "tok-existente",
+      "app:aaaa",
+    );
+  });
+
+  it("mantém as ações curadas mesmo quando a busca de apps falha (degrada sem quebrar)", async () => {
+    const { deps, wsHandlers } = makeDeps({
+      loadConnectionConfig: vi.fn(async () => ({
+        deviceId: "device-1",
+        deviceName: "Moto G60",
+        host: "192.168.1.50",
+        port: 38121,
+      })),
+      readAccessToken: vi.fn(async () => "tok-existente"),
+      fetchActions: vi.fn(async () => ({
+        ok: true as const,
+        data: [
+          {
+            id: "app.chrome",
+            label: "Chrome",
+            icon: "chrome",
+            kind: "open_app",
+            requireLongPress: false,
+          },
+        ],
+      })),
+      fetchApps: vi.fn(async () => ({
+        ok: false as const,
+        error: { code: "NETWORK_ERROR" as const, message: "" },
+      })),
+    });
+
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("connecting"));
+    act(() => wsHandlers.onStatusChange?.("connected"));
+
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+    await waitFor(() => expect(result.current.actionsCatalog["app.chrome"]).toBeDefined());
+    expect(result.current.actionsCatalog["app.chrome"].label).toBe("Chrome");
+  });
+
+  it("não apaga o catálogo quando a busca de ações falha (evita 'indisponível' em tudo)", async () => {
+    const { deps, wsHandlers } = makeDeps({
+      loadConnectionConfig: vi.fn(async () => ({
+        deviceId: "device-1",
+        deviceName: "Moto G60",
+        host: "192.168.1.50",
+        port: 38121,
+      })),
+      readAccessToken: vi.fn(async () => "tok-existente"),
+      fetchActions: vi.fn(async () => ({
+        ok: false as const,
+        error: { code: "NETWORK_ERROR" as const, message: "" },
+      })),
+      fetchApps: vi.fn(async () => ({
+        ok: true as const,
+        data: [{ id: "app:aaaa", name: "Notion", hasIcon: false }],
+      })),
+    });
+
+    const { result } = renderHook(() => useDeskPanelConnection(deps));
+    await waitFor(() => expect(result.current.phase).toBe("connecting"));
+    act(() => wsHandlers.onStatusChange?.("connected"));
+    await waitFor(() => expect(result.current.phase).toBe("ready"));
+
+    // dá tempo para o efeito rodar e confirmar que não populou nada a
+    // mais além do estado inicial vazio.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(result.current.actionsCatalog).toEqual({});
   });
 
   it("repassa state.snapshot para macName/agentVersion", async () => {

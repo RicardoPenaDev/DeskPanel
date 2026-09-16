@@ -372,7 +372,10 @@ export default function EditorScreen({
               >
                 {button ? (
                   <>
-                    <Icon name={button.iconOverride ?? catalogAction?.icon} />
+                    <Icon
+                      name={button.iconOverride ?? catalogAction?.icon}
+                      src={button.iconOverride ? undefined : catalogAction?.iconUrl}
+                    />
                     <span>{label}</span>
                   </>
                 ) : (

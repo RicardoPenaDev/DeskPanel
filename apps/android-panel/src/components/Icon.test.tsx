@@ -21,4 +21,12 @@ describe("Icon", () => {
     const { container } = render(<Icon />);
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
+
+  it("renderiza uma imagem real quando `src` é passado, em vez do desenho vetorial", () => {
+    const { container } = render(<Icon name="chrome" src="blob:fake-icon" />);
+    const img = container.querySelector("img");
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute("src", "blob:fake-icon");
+    expect(container.querySelector("svg")).not.toBeInTheDocument();
+  });
 });

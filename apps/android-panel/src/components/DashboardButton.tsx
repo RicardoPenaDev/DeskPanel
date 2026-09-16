@@ -21,6 +21,7 @@ export interface ActivateOutcome {
 export interface DashboardButtonProps {
   label: string;
   icon?: string;
+  iconUrl?: string;
   color?: ButtonColor;
   requireLongPress: boolean;
   unavailable?: boolean;
@@ -35,6 +36,7 @@ const ERROR_RESET_MS = 1800;
 export default function DashboardButton({
   label,
   icon,
+  iconUrl,
   color = "neutral",
   requireLongPress,
   unavailable = false,
@@ -124,7 +126,7 @@ export default function DashboardButton({
       aria-label={label}
       aria-disabled={unavailable}
     >
-      <Icon name={icon} className="dp-button__icon" />
+      <Icon name={icon} src={iconUrl} className="dp-button__icon" />
       <span className="dp-button__label">{label}</span>
       {requireLongPress && state === "idle" && <span className="dp-button__hint">segure</span>}
       {state === "running" && (

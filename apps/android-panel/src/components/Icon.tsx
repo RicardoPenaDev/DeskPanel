@@ -31,6 +31,10 @@ export type IconName = (typeof ICON_NAMES)[number];
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
   name?: string;
+  // Ícone real do app (PNG convertido do .icns pelo Mac — ver
+  // fetchAppIcon), como na tela inicial do iPhone. Tem prioridade sobre
+  // `name`; ausente ou falho, cai no desenho vetorial.
+  src?: string;
   size?: number;
 }
 
@@ -114,7 +118,22 @@ function Shape({ name }: { name: IconName }) {
  * Ícone monocromático via `currentColor` — herda a cor do texto do botão,
  * então funciona nos temas claro/escuro sem variante própria.
  */
-export default function Icon({ name, size = 22, ...svgProps }: IconProps) {
+export default function Icon({ name, src, size = 22, className, ...svgProps }: IconProps) {
+  if (src) {
+    return (
+      <img
+        src={src}
+        width={size}
+        height={size}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className={["dp-icon-image", className].filter(Boolean).join(" ")}
+        style={{ borderRadius: size * 0.22 }}
+      />
+    );
+  }
+
   const resolved: IconName = (ICON_NAMES as readonly string[]).includes(name ?? "")
     ? (name as IconName)
     : "app";
@@ -130,6 +149,7 @@ export default function Icon({ name, size = 22, ...svgProps }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      className={className}
       {...svgProps}
     >
       <Shape name={resolved} />

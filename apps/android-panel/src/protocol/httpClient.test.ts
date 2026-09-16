@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { checkHealth, fetchActions, fetchState, pairDevice, fetchVersion } from "./httpClient";
+import {
+  checkHealth,
+  fetchActions,
+  fetchAppIcon,
+  fetchApps,
+  fetchState,
+  pairDevice,
+  fetchVersion,
+} from "./httpClient";
 
 const endpoint = { host: "192.168.1.50", port: 38121 };
 
@@ -104,5 +112,59 @@ describe("httpClient", () => {
 
     const [url] = vi.mocked(fetch).mock.calls[0];
     expect(String(url)).not.toContain("segredo-super-secreto");
+  });
+
+  it("busca a lista de apps instalados com Bearer token", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(200, [{ id: "app:aaaa", name: "Notion", hasIcon: true }]),
+    );
+
+    const result = await fetchApps(endpoint, "algum-token");
+
+    expect(result).toEqual({ ok: true, data: [{ id: "app:aaaa", name: "Notion", hasIcon: true }] });
+    expect(fetch).toHaveBeenCalledWith(
+      "http://192.168.1.50:38121/api/v1/apps",
+      expect.objectContaining({ headers: { Authorization: "Bearer algum-token" } }),
+    );
+  });
+
+  it("converte o ícone de um app em uma object URL, com o token no header e não na URL", async () => {
+    // jsdom não implementa URL.createObjectURL — precisa ser criado e
+    // restaurado manualmente em vez de vi.spyOn (que exige o método já
+    // existir no objeto).
+    const originalCreateObjectURL = URL.createObjectURL;
+    URL.createObjectURL = vi.fn().mockReturnValue("blob:fake-icon-url");
+    try {
+      const blob = new Blob(["fake-png-bytes"], { type: "image/png" });
+      vi.mocked(fetch).mockResolvedValueOnce(new Response(blob, { status: 200 }));
+
+      const iconUrl = await fetchAppIcon(endpoint, "segredo-super-secreto", "app:aaaa");
+
+      expect(iconUrl).toBe("blob:fake-icon-url");
+      const [url, init] = vi.mocked(fetch).mock.calls[0];
+      expect(String(url)).toBe("http://192.168.1.50:38121/api/v1/apps/app%3Aaaaa/icon");
+      expect(String(url)).not.toContain("segredo-super-secreto");
+      expect((init as RequestInit).headers).toEqual({
+        Authorization: "Bearer segredo-super-secreto",
+      });
+    } finally {
+      URL.createObjectURL = originalCreateObjectURL;
+    }
+  });
+
+  it("fetchAppIcon retorna null em vez de lançar quando o ícone não existe", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 404 }));
+
+    const iconUrl = await fetchAppIcon(endpoint, "algum-token", "app:desconhecido");
+
+    expect(iconUrl).toBeNull();
+  });
+
+  it("fetchAppIcon retorna null em vez de lançar quando a rede falha", async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+    const iconUrl = await fetchAppIcon(endpoint, "algum-token", "app:aaaa");
+
+    expect(iconUrl).toBeNull();
   });
 });

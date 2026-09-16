@@ -568,3 +568,26 @@ body {
   color: var(--dp-text);
   padding: 0 12px;
 }
+
+.dp-action-picker__search {
+  font-size: 1rem;
+  color: var(--dp-text);
+  background: var(--dp-surface);
+  border: 1px solid #2a2f36;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 44px;
+  margin-bottom: 8px;
+}
+
+.dp-action-picker__search:focus {
+  outline: 2px solid var(--dp-accent);
+  outline-offset: 1px;
+}
+
+/* --- Ícone real do app (PNG do .icns, como na tela do iPhone) ---------- */
+
+.dp-icon-image {
+  object-fit: cover;
+  flex-shrink: 0;
+}

@@ -18,16 +18,13 @@ import (
 	"github.com/coder/websocket/wsjson"
 
 	"deskpanel-agent/internal/actions"
+	"deskpanel-agent/internal/appscan"
 	"deskpanel-agent/internal/auth"
+	"deskpanel-agent/internal/corsorigins"
 	"deskpanel-agent/internal/devices"
 	"deskpanel-agent/internal/executor"
 	"deskpanel-agent/internal/protocol"
 )
-
-// allowedOrigins são os esquemas de origem que o WebView do Capacitor pode
-// enviar (PROJECT.md §12.13). O app real (Fase 3) fixa um androidScheme;
-// ajustar esta lista se ele mudar.
-var allowedOrigins = []string{"localhost", "https://localhost", "http://localhost", "capacitor://localhost"}
 
 const (
 	defaultAuthTimeout    = 5 * time.Second
@@ -43,6 +40,7 @@ const (
 type Handler struct {
 	Devices      *devices.Store
 	Actions      []actions.Action
+	Apps         *appscan.Scanner
 	Executor     executor.Executor
 	MacName      string
 	AgentVersion string
@@ -108,10 +106,27 @@ func (h *Handler) logf(format string, args ...any) {
 	}
 }
 
+// findAction procura primeiro no catálogo curado do config.json e, se não
+// achar, tenta resolver como um app vindo da varredura ao vivo de
+// /Applications (id no formato "app:..." — PROJECT.md §7.4: mesmo aqui,
+// nenhum caminho é aceito do cliente, só o ID que o próprio Mac gerou na
+// última varredura). Resolve refaz a varredura, então um app desinstalado
+// nunca chega a montar uma ação.
 func (h *Handler) findAction(id string) (actions.Action, bool) {
 	for _, a := range h.Actions {
 		if a.ID == id {
 			return a, true
+		}
+	}
+	if h.Apps != nil {
+		if app, ok := h.Apps.Resolve(id); ok {
+			return actions.Action{
+				ID:         app.ID,
+				Label:      app.Name,
+				Icon:       "app",
+				Kind:       actions.KindOpenApp,
+				Parameters: map[string]any{"application": app.Path},
+			}, true
 		}
 	}
 	return actions.Action{}, false
@@ -121,7 +136,7 @@ func (h *Handler) findAction(id string) (actions.Action, bool) {
 // upgrade só são logados — a resposta HTTP já foi enviada (é agora um
 // WebSocket).
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: allowedOrigins})
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: corsorigins.Allowed})
 	if err != nil {
 		return
 	}

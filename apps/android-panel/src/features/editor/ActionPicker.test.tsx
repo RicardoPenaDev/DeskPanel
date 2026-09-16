@@ -23,6 +23,16 @@ function catalog(): Record<string, ActionSummary> {
   };
 }
 
+function bigCatalog(): Record<string, ActionSummary> {
+  const result = catalog();
+  const names = ["Notion", "Spotify", "Figma", "Slack", "Discord", "Postman", "Docker", "Zoom"];
+  for (const name of names) {
+    const id = `app:${name.toLowerCase()}`;
+    result[id] = { id, label: name, icon: "app", kind: "open_app", requireLongPress: false };
+  }
+  return result;
+}
+
 describe("ActionPicker", () => {
   it("lista as ações do catálogo em ordem alfabética", () => {
     render(<ActionPicker actionsCatalog={catalog()} onPick={vi.fn()} onCancel={vi.fn()} />);
@@ -52,5 +62,46 @@ describe("ActionPicker", () => {
 
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("não mostra busca com poucas ações", () => {
+    render(<ActionPicker actionsCatalog={catalog()} onPick={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.queryByLabelText("Buscar app ou ação")).not.toBeInTheDocument();
+  });
+
+  it("filtra a lista pelo texto buscado quando há muitas ações", async () => {
+    const user = userEvent.setup();
+    render(<ActionPicker actionsCatalog={bigCatalog()} onPick={vi.fn()} onCancel={vi.fn()} />);
+
+    await user.type(screen.getByLabelText("Buscar app ou ação"), "notion");
+
+    expect(screen.getByRole("button", { name: /Notion/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Chrome/ })).not.toBeInTheDocument();
+  });
+
+  it("mostra uma mensagem quando a busca não encontra nada", async () => {
+    const user = userEvent.setup();
+    render(<ActionPicker actionsCatalog={bigCatalog()} onPick={vi.fn()} onCancel={vi.fn()} />);
+
+    await user.type(screen.getByLabelText("Buscar app ou ação"), "app-inexistente");
+
+    expect(screen.getByText(/Nada encontrado/)).toBeInTheDocument();
+  });
+
+  it("renderiza o ícone real quando a ação/app tem iconUrl", () => {
+    const withIcon: Record<string, ActionSummary> = {
+      ...catalog(),
+      "app:notion": {
+        id: "app:notion",
+        label: "Notion",
+        icon: "app",
+        kind: "open_app",
+        requireLongPress: false,
+        iconUrl: "blob:fake-notion-icon",
+      },
+    };
+    render(<ActionPicker actionsCatalog={withIcon} onPick={vi.fn()} onCancel={vi.fn()} />);
+    const img = screen.getByRole("button", { name: /Notion/ }).querySelector("img");
+    expect(img).toHaveAttribute("src", "blob:fake-notion-icon");
   });
 });

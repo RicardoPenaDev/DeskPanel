@@ -16,6 +16,7 @@ import (
 
 	"deskpanel-agent/internal/adminsocket"
 	"deskpanel-agent/internal/api"
+	"deskpanel-agent/internal/appscan"
 	"deskpanel-agent/internal/config"
 	"deskpanel-agent/internal/devices"
 	"deskpanel-agent/internal/executor"
@@ -66,9 +67,12 @@ func cmdServe(args []string) error {
 		macName = "Mac"
 	}
 
+	appScanner := appscan.New()
+
 	wsHandler := &websocket.Handler{
 		Devices:      store,
 		Actions:      cfg.Actions,
+		Apps:         appScanner,
 		Executor:     &executor.MacOSExecutor{},
 		MacName:      macName,
 		AgentVersion: version,
@@ -77,6 +81,7 @@ func cmdServe(args []string) error {
 
 	apiServer := &api.Server{
 		Actions:      cfg.Actions,
+		Apps:         appScanner,
 		Devices:      store,
 		Pairing:      pairingMgr,
 		Limiter:      limiter,
