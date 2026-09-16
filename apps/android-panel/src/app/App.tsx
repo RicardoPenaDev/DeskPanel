@@ -6,7 +6,10 @@
 // componente não antecipa nenhuma delas.
 
 import { useState } from "react";
-import { useDeskPanelConnection } from "../features/connection/useDeskPanelConnection";
+import {
+  useDeskPanelConnection,
+  type DeskPanelConnectionDeps,
+} from "../features/connection/useDeskPanelConnection";
 import PairingScreen from "../features/pairing/PairingScreen";
 import DashboardScreen from "../features/dashboard/DashboardScreen";
 import EditorScreen from "../features/editor/EditorScreen";
@@ -14,8 +17,14 @@ import SettingsScreen from "../features/settings/SettingsScreen";
 
 type PanelMode = "dashboard" | "editor" | "settings";
 
-export default function App() {
-  const connection = useDeskPanelConnection();
+export interface AppProps {
+  // Só para testes de componente injetarem deps falsas (mesmo padrão de
+  // useDeskPanelConnection) sem precisar mockar módulos inteiros.
+  connectionOverrides?: Partial<DeskPanelConnectionDeps>;
+}
+
+export default function App({ connectionOverrides }: AppProps = {}) {
+  const connection = useDeskPanelConnection(connectionOverrides);
   const [mode, setMode] = useState<PanelMode>("dashboard");
 
   if (connection.phase === "loading" || !connection.connectionConfig || !connection.layout) {
