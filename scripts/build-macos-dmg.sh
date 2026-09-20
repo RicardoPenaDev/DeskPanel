@@ -41,7 +41,10 @@ chmod 755 "$INSTALLER_APP/Contents/MacOS/DeskPanel Installer"
 
 DESKPANEL_APP="$INSTALLER_APP/Contents/Resources/DeskPanel.app"
 mkdir -p "$DESKPANEL_APP/Contents/MacOS" "$DESKPANEL_APP/Contents/Resources"
-cp "$REPO_ROOT/scripts/deskpanel-app.sh" "$DESKPANEL_APP/Contents/MacOS/DeskPanel"
+(
+  cd "$AGENT_DIR" &&
+  go build -ldflags "-X main.version=$VERSION" -o "$DESKPANEL_APP/Contents/MacOS/DeskPanel" ./cmd/deskpanel-launcher
+)
 cp "$REPO_ROOT/assets/macos/DeskPanel.icns" "$DESKPANEL_APP/Contents/Resources/DeskPanel.icns"
 chmod 755 "$DESKPANEL_APP/Contents/MacOS/DeskPanel"
 cat >"$DESKPANEL_APP/Contents/Info.plist" <<PLIST_EOF
