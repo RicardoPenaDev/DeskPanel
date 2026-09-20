@@ -5,7 +5,7 @@
 // settings). A instalação real fica nos scripts da Fase 5 — este
 // componente não antecipa nenhuma delas.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useDeskPanelConnection,
   type DeskPanelConnectionDeps,
@@ -18,6 +18,8 @@ import { setDimBrightness, setImmersiveMode, setKeepAwake } from "../services/de
 
 type PanelMode = "dashboard" | "editor" | "settings";
 
+type ConnectionNotice = { kind: "offline" | "online"; message: string };
+
 export interface AppProps {
   // Só para testes de componente injetarem deps falsas (mesmo padrão de
   // useDeskPanelConnection) sem precisar mockar módulos inteiros.
@@ -27,6 +29,30 @@ export interface AppProps {
 export default function App({ connectionOverrides }: AppProps = {}) {
   const connection = useDeskPanelConnection(connectionOverrides);
   const [mode, setMode] = useState<PanelMode>("dashboard");
+  const previousStatus = useRef(connection.status);
+  const [connectionNotice, setConnectionNotice] = useState<ConnectionNotice | null>(null);
+
+  useEffect(() => {
+    const previous = previousStatus.current;
+    const next = connection.status;
+    previousStatus.current = next;
+
+    if (previous === next) return;
+    if (next === "connected" && previous !== "connected") {
+      setConnectionNotice({ kind: "online", message: "Conectado ao Mac" });
+    } else if (
+      previous === "connected" &&
+      (next === "disconnected" || next === "reconnecting" || next === "connecting")
+    ) {
+      setConnectionNotice({ kind: "offline", message: "Sem conexão com o Mac" });
+    }
+  }, [connection.status]);
+
+  useEffect(() => {
+    if (!connectionNotice) return;
+    const timer = window.setTimeout(() => setConnectionNotice(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [connectionNotice]);
 
   // Aplica keep-awake/imersivo/brilho reduzido assim que as preferências
   // salvas terminam de carregar — sem isso, o modo imersivo (e os outros
@@ -50,59 +76,82 @@ export default function App({ connectionOverrides }: AppProps = {}) {
     );
   }
 
+  const notice = connectionNotice ? (
+    <div
+      className={`dp-connection-notice dp-connection-notice--${connectionNotice.kind}`}
+      role="status"
+      aria-live="polite"
+    >
+      <span className="dp-connection-notice__dot" aria-hidden="true" />
+      {connectionNotice.message}
+    </div>
+  ) : null;
+
   if (connection.phase === "pairing") {
     return (
-      <PairingScreen
-        initialConfig={connection.connectionConfig}
-        testConnection={connection.testConnection}
-        pair={connection.pair}
-        connectionError={connection.connectionError}
-      />
+      <>
+        {notice}
+        <PairingScreen
+          initialConfig={connection.connectionConfig}
+          testConnection={connection.testConnection}
+          pair={connection.pair}
+          connectionError={connection.connectionError}
+        />
+      </>
     );
   }
 
   if (mode === "editor") {
     return (
-      <EditorScreen
-        layout={connection.layout}
-        actionsCatalog={connection.actionsCatalog}
-        onSave={connection.updateLayout}
-        onRestoreDefault={connection.resetLayoutToDefault}
-        onClose={() => setMode("dashboard")}
-      />
+      <>
+        {notice}
+        <EditorScreen
+          layout={connection.layout}
+          actionsCatalog={connection.actionsCatalog}
+          onSave={connection.updateLayout}
+          onRestoreDefault={connection.resetLayoutToDefault}
+          onClose={() => setMode("dashboard")}
+        />
+      </>
     );
   }
 
   if (mode === "settings") {
     return (
-      <SettingsScreen
-        connectionConfig={connection.connectionConfig}
-        appSettings={connection.appSettings}
-        status={connection.status}
-        macName={connection.macName}
-        agentVersion={connection.agentVersion}
-        connectionError={connection.connectionError}
-        testConnection={connection.testConnection}
-        updateConnectionConfig={connection.updateConnectionConfig}
-        updateAppSettings={connection.updateAppSettings}
-        reconnect={connection.reconnect}
-        forgetPairing={connection.forgetPairing}
-        onClose={() => setMode("dashboard")}
-      />
+      <>
+        {notice}
+        <SettingsScreen
+          connectionConfig={connection.connectionConfig}
+          appSettings={connection.appSettings}
+          status={connection.status}
+          macName={connection.macName}
+          agentVersion={connection.agentVersion}
+          connectionError={connection.connectionError}
+          testConnection={connection.testConnection}
+          updateConnectionConfig={connection.updateConnectionConfig}
+          updateAppSettings={connection.updateAppSettings}
+          reconnect={connection.reconnect}
+          forgetPairing={connection.forgetPairing}
+          onClose={() => setMode("dashboard")}
+        />
+      </>
     );
   }
 
   return (
-    <DashboardScreen
-      layout={connection.layout}
-      actionsCatalog={connection.actionsCatalog}
-      status={connection.status}
-      macName={connection.macName}
-      vibrationEnabled={connection.appSettings.vibrationEnabled}
-      weather={connection.weather}
-      executeAction={connection.executeAction}
-      onOpenEditor={() => setMode("editor")}
-      onOpenSettings={() => setMode("settings")}
-    />
+    <>
+      {notice}
+      <DashboardScreen
+        layout={connection.layout}
+        actionsCatalog={connection.actionsCatalog}
+        status={connection.status}
+        macName={connection.macName}
+        vibrationEnabled={connection.appSettings.vibrationEnabled}
+        weather={connection.weather}
+        executeAction={connection.executeAction}
+        onOpenEditor={() => setMode("editor")}
+        onOpenSettings={() => setMode("settings")}
+      />
+    </>
   );
 }

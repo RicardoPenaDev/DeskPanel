@@ -8,6 +8,7 @@ import { useState, type FormEvent } from "react";
 import type { ConnectionConfig } from "../../storage/connectionConfig";
 import type { HealthResponse, HttpResult } from "../../protocol/httpClient";
 import type { PairInput, PairOutcome } from "../connection/useDeskPanelConnection";
+import QrScanner from "./QrScanner";
 
 export interface PairingScreenProps {
   initialConfig: ConnectionConfig;
@@ -30,6 +31,25 @@ export default function PairingScreen({
   const [testing, setTesting] = useState(false);
   const [pairing, setPairing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+
+  function handleQrCode(value: string): void {
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol !== "deskpanel:" || parsed.hostname !== "pair") throw new Error("scheme");
+      const nextHost = parsed.searchParams.get("host") ?? "";
+      const nextPort = parsed.searchParams.get("port") ?? "38121";
+      const nextCode = parsed.searchParams.get("code") ?? "";
+      if (!nextHost || !/^\d{1,5}$/.test(nextPort) || !/^\d{6}$/.test(nextCode)) throw new Error("payload");
+      setHost(nextHost);
+      setPort(nextPort);
+      setCode(nextCode);
+      setScanning(false);
+      setErrorMessage("Dados preenchidos pelo QR Code. Toque em Parear.");
+    } catch {
+      setErrorMessage("QR Code inválido. Use um código gerado pelo DeskPanel no Mac.");
+    }
+  }
 
   const portNumber = Number(port);
   const hostValid = host.trim().length > 0;
@@ -66,6 +86,8 @@ export default function PairingScreen({
       setErrorMessage(outcome.message);
     }
   }
+
+  if (scanning) return <QrScanner onCode={handleQrCode} onClose={() => setScanning(false)} />;
 
   return (
     <main className="dp-pairing-screen">
@@ -108,6 +130,9 @@ export default function PairingScreen({
         </label>
 
         <div className="dp-pairing-actions">
+          <button type="button" onClick={() => setScanning(true)} disabled={pairing}>
+            Escanear QR Code
+          </button>
           <button
             type="button"
             onClick={handleTestConnection}

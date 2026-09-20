@@ -24,6 +24,7 @@ apps/mac-agent/deskpanel-agent
 
 # Logs e segredos locais (nunca versionar)
 *.log
+backups/
 config.json
 devices.json
 state.json
@@ -33,6 +34,10 @@ state.json
 # Build artifacts
 *.apk
 *.aab
+
+# Public release artifacts
+!releases/
+!releases/**
 
 # TypeScript build cache
 *.tsbuildinfo

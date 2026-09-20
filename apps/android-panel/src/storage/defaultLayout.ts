@@ -29,8 +29,7 @@ function appsPage(): DashboardPage {
       button("btn-app-terminal", "app.terminal", 3),
       button("btn-app-spotify", "app.spotify", 4),
       button("btn-app-vscode", "app.vscode", 5),
-      button("btn-app-screenshot", "app.screenshot", 6),
-      button("btn-shortcut-work", "shortcut.work", 7),
+      button("btn-shortcut-work", "shortcut.work", 6),
     ],
   };
 }

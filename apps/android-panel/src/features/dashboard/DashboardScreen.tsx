@@ -163,7 +163,7 @@ export default function DashboardScreen({
     <main className="dp-dashboard" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {page && (
         <div
-          className="dp-dashboard__grid"
+          className={`dp-dashboard__grid${page.id === "page-media" ? " dp-dashboard__grid--media" : ""}`}
           style={{
             gridTemplateColumns: `repeat(${page.columns}, 1fr)`,
             gridTemplateRows: `repeat(${page.rows}, 1fr)`,
@@ -185,10 +185,11 @@ export default function DashboardScreen({
             }
 
             const catalogAction = actionsCatalog[button.actionId];
+            const label = button.labelOverride ?? catalogAction?.label ?? button.actionId;
             return (
               <DashboardButton
                 key={button.id}
-                label={button.labelOverride ?? catalogAction?.label ?? button.actionId}
+                label={label}
                 icon={button.iconOverride ?? catalogAction?.icon}
                 iconUrl={button.iconOverride ? undefined : catalogAction?.iconUrl}
                 color={button.color ?? "neutral"}

@@ -11,9 +11,14 @@ export const ICON_NAMES = [
   "app",
   "chrome",
   "message-circle",
+  "claude",
   "folder",
   "terminal",
   "music",
+  "spotify",
+  "rustdesk",
+  "windows",
+  "lightshot",
   "code",
   "camera",
   "briefcase-business",
@@ -23,8 +28,8 @@ export const ICON_NAMES = [
   "volume-x",
   "volume-1",
   "volume-2",
-  "monitor-off",
-  "lock",
+  "display-sleep",
+  "shield-lock",
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
@@ -49,6 +54,8 @@ function Shape({ name }: { name: IconName }) {
       );
     case "message-circle":
       return <path d="M4 5h16v10H9l-4 4V5Z" />;
+    case "claude":
+      return <path d="M12 3.5 13.8 9l5.2-3-3 5.2 5.5 1.8-5.5 1.8 3 5.2-5.2-3-1.8 5.5-1.8-5.5-5.2 3 3-5.2L2.5 13l5.5-1.8-3-5.2 5.2 3L12 3.5Z" />;
     case "folder":
       return <path d="M3 6h6l2 2h10v10H3V6Z" />;
     case "terminal":
@@ -66,6 +73,19 @@ function Shape({ name }: { name: IconName }) {
           <path d="M9.5 18V6l10-2v12" />
         </>
       );
+    case "spotify":
+      return (
+        <>
+          <circle cx="12" cy="12" r="8.5" />
+          <path d="M7.2 9.2c3.4-1 6.5-.7 9.5.7M7.8 12.2c2.8-.7 5.4-.4 8 .8M8.5 15c2.1-.4 4.2-.1 6.2.8" />
+        </>
+      );
+    case "rustdesk":
+      return <path d="M7 5a7 7 0 1 0 0 14M17 5a7 7 0 1 1 0 14M7 5l3 3M17 19l-3-3" />;
+    case "windows":
+      return <path d="m4 5 7-1v7H4V5Zm9-1 7-1v8h-7V4ZM4 13h7v7l-7-1v-6Zm9 0h7v8l-7-1v-7Z" />;
+    case "lightshot":
+      return <path d="m5 19 4-9 3 3 7-8-3 10-4-2-7 6Zm7-6 2 2" />;
     case "code":
       return <path d="M9 7 4 12l5 5M15 7l5 5-5 5" />;
     case "camera":
@@ -94,18 +114,19 @@ function Shape({ name }: { name: IconName }) {
       return <path d="M4 9v6h4l5 4V5L8 9H4ZM16 10a3 3 0 0 1 0 4" />;
     case "volume-2":
       return <path d="M4 9v6h4l5 4V5L8 9H4ZM15.5 9a5 5 0 0 1 0 6M18.5 6.5a9 9 0 0 1 0 11" />;
-    case "monitor-off":
+    case "display-sleep":
       return (
         <>
           <rect x="3" y="4" width="18" height="12" rx="1.5" />
-          <path d="M8 20h8M12 16v4M3 3l18 18" />
+          <path d="M8 20h8M12 16v4M15.5 7.5a3.5 3.5 0 1 0 2.8 5.6 3 3 0 1 1-2.8-5.6Z" />
         </>
       );
-    case "lock":
+    case "shield-lock":
       return (
         <>
-          <rect x="5" y="11" width="14" height="9" rx="1.5" />
-          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          <path d="M12 3 19 6v5c0 4.5-3 7.7-7 10-4-2.3-7-5.5-7-10V6l7-3Z" />
+          <rect x="9" y="10.5" width="6" height="5" rx="1" />
+          <path d="M10.5 10.5V9a1.5 1.5 0 0 1 3 0v1.5" />
         </>
       );
     case "app":

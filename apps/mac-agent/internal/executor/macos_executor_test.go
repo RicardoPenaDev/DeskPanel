@@ -253,18 +253,73 @@ func TestMacOSExecutor_MusicControl_RejectsUnknownOperation(t *testing.T) {
 	}
 }
 
-func TestMacOSExecutor_NotYetImplementedKinds(t *testing.T) {
-	for _, kind := range []actions.Kind{actions.KindKeystroke, actions.KindScreenLock, actions.KindDisplaySleep} {
+func TestMacOSExecutor_DisplaySleep_UsesFixedCommand(t *testing.T) {
+	var calls []recordedCall
+	m := &MacOSExecutor{run: fakeRunner(nil, &calls)}
+
+	res := m.Execute(context.Background(), actions.Action{ID: "system.display_sleep", Kind: actions.KindDisplaySleep})
+	if res.Status != "success" {
+		t.Fatalf("res = %+v, want success", res)
+	}
+	if len(calls) != 1 || calls[0].name != "pmset" || len(calls[0].args) != 1 || calls[0].args[0] != "displaysleepnow" {
+		t.Fatalf("chamada inesperada: %+v", calls)
+	}
+}
+
+func TestMacOSExecutor_ScreenLock_UsesFixedAppleScript(t *testing.T) {
+	var calls []recordedCall
+	m := &MacOSExecutor{run: fakeRunner(nil, &calls)}
+
+	res := m.Execute(context.Background(), actions.Action{ID: "system.lock", Kind: actions.KindScreenLock})
+	if res.Status != "success" {
+		t.Fatalf("res = %+v, want success", res)
+	}
+	if len(calls) != 1 || calls[0].name != "osascript" || calls[0].args[0] != "-e" || calls[0].args[1] != `tell application "System Events" to keystroke "q" using {control down, command down}` {
+		t.Fatalf("script/chamada inesperada: %+v", calls)
+	}
+}
+
+func TestMacOSExecutor_Keystroke_UsesValidatedAppleScript(t *testing.T) {
+	var calls []recordedCall
+	m := &MacOSExecutor{run: fakeRunner(nil, &calls)}
+
+	res := m.Execute(context.Background(), actions.Action{
+		ID: "app.screenshot", Kind: actions.KindKeystroke,
+		Parameters: map[string]any{
+			"key":       "4",
+			"modifiers": []any{"cmd", "shift"},
+		},
+	})
+
+	if res.Status != "success" {
+		t.Fatalf("res = %+v, want success", res)
+	}
+	if len(calls) != 1 || calls[0].name != "osascript" || calls[0].args[0] != "-e" {
+		t.Fatalf("chamada inesperada: %+v", calls)
+	}
+	want := `tell application "System Events" to keystroke "4" using {command down, shift down}`
+	if calls[0].args[1] != want {
+		t.Errorf("script = %q, want %q", calls[0].args[1], want)
+	}
+}
+
+func TestMacOSExecutor_Keystroke_RejectsUntrustedKeyAndModifier(t *testing.T) {
+	cases := []map[string]any{
+		{"key": "4; do shell script \"bad\"", "modifiers": []any{"cmd"}},
+		{"key": "4", "modifiers": []any{"cmd", "command"}},
+		{"key": "4", "modifiers": []any{"fn"}},
+	}
+	for _, parameters := range cases {
 		var calls []recordedCall
 		m := &MacOSExecutor{run: fakeRunner(nil, &calls)}
-
-		res := m.Execute(context.Background(), actions.Action{ID: "x", Kind: kind})
-
+		res := m.Execute(context.Background(), actions.Action{
+			ID: "shortcut.invalid", Kind: actions.KindKeystroke, Parameters: parameters,
+		})
 		if res.Status != "error" || res.ErrorCode != "ACTION_NOT_ALLOWED" {
-			t.Errorf("kind=%q: res = %+v, want status=error errorCode=ACTION_NOT_ALLOWED", kind, res)
+			t.Errorf("parameters=%v: res=%+v, want ACTION_NOT_ALLOWED", parameters, res)
 		}
 		if len(calls) != 0 {
-			t.Errorf("kind=%q: não deveria ter chamado o SO, calls=%+v", kind, calls)
+			t.Errorf("parameters=%v: não deveria chamar o SO, calls=%+v", parameters, calls)
 		}
 	}
 }

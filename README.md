@@ -1,51 +1,113 @@
 # DeskPanel
 
-Painel de atalhos tipo Stream Deck rodando em um Android dedicado (inicialmente um Motorola Moto G60), controlando um Mac pela rede local.
+DeskPanel turns an Android phone into a customizable control panel for macOS, similar to a Stream Deck. It runs locally on your network: the Android app sends an approved action ID and the macOS agent validates and executes the matching action.
 
-A especificação completa do produto — visão, arquitetura, protocolo, segurança, fases de implementação e critérios de aceite — vive em [`PROJECT.md`](./PROJECT.md). Este README é só o ponto de entrada prático; **qualquer decisão de arquitetura ou escopo segue o que está em `PROJECT.md`**, registrando mudanças em [`docs/DECISIONS.md`](./docs/DECISIONS.md).
+## What is included
 
-## Componentes
-
-| App | Linguagem | Caminho | Função |
+| Component | Stack | Path | Purpose |
 |---|---|---|---|
-| DeskPanel Android | React + TypeScript + Vite + Capacitor | `apps/android-panel` | Interface do painel no celular |
-| DeskPanel Agent | Go | `apps/mac-agent` | Servidor local no Mac que valida e executa ações |
+| DeskPanel Android | React, TypeScript, Vite, Capacitor | `apps/android-panel` | Touch dashboard, editor, pairing and QR scanner |
+| DeskPanel Agent | Go | `apps/mac-agent` | Local macOS service that validates and executes actions |
+| macOS installer | Shell, LaunchAgent, DMG | `scripts/` | One-click installation and local setup assistant |
 
-Comunicação: HTTP (pareamento, `/health`, `/version`) + WebSocket (execução de ações em tempo real) na porta `38121`, só em rede local. Nenhum comando arbitrário trafega do celular para o Mac — apenas um `actionId` pré-cadastrado. Detalhes do protocolo em [`docs/PROTOCOL.md`](./docs/PROTOCOL.md).
+Communication uses HTTP and WebSocket on port `38121`. The MVP is local-network only. The phone never sends arbitrary shell commands, AppleScript or URLs for execution; it sends only a preconfigured `actionId`.
 
-## Pré-requisitos de desenvolvimento
+## Current release
 
-- Go >= 1.23 (`apps/mac-agent`)
-- Node.js >= 20 e pnpm (`apps/android-panel`)
-- Um Mac para rodar o agente de verdade (Accessibility/Automation permissions — ver [`docs/SECURITY.md`](./docs/SECURITY.md))
-- Um dispositivo Android (ou emulador) para o app — ver [`docs/INSTALL-ANDROID.md`](./docs/INSTALL-ANDROID.md)
+Release `v0.1.1` includes:
 
-## Comandos
+- One-click macOS DMG installer.
+- `DeskPanel.app` installed in `/Applications` with a custom icon.
+- Local setup page with Mac IP addresses, port and temporary QR pairing code.
+- Android QR scanner for fast pairing.
+- Automatic reconnection and connection status feedback.
+- Customizable dashboard pages and Apple-inspired glass UI.
+- Safe predefined macOS actions such as opening apps, media controls and volume control.
+
+Download the artifacts from [`releases/v0.1.1`](./releases/v0.1.1) or the GitHub Releases page.
+
+## Quick start for users
+
+### macOS
+
+1. Download `DeskPanel-0.1.1.dmg`.
+2. Open it and double-click `DeskPanel Installer.app`.
+3. The installer places `DeskPanel.app` in `/Applications` and starts the background agent.
+4. Open the setup page when prompted.
+5. Generate a temporary QR code.
+
+macOS may ask for Accessibility or Automation permission for actions that control the system. Only grant permissions if you trust the installation and understand the action being enabled.
+
+### Android
+
+1. Install `DeskPanel-0.1.1.apk` on the Android phone.
+2. Open DeskPanel and choose **Settings > Connect to Mac**.
+3. Tap **Scan QR Code** and scan the code shown by the Mac setup page.
+
+## Development prerequisites
+
+- macOS for building and running the agent.
+- Go 1.23 or newer.
+- Node.js 20 or newer.
+- Corepack/pnpm.
+- Android Studio SDK and an Android device or emulator.
+
+## Development commands
 
 ```bash
-make setup        # instala dependências dos dois apps
-make dev-agent     # roda o agente Go localmente
-make dev-android    # roda o app Android em modo dev (Vite)
-make test          # testes Go + testes React
-make lint           # lint Go + lint TS
-make build-agent    # compila o binário do agente
-make build-apk       # gera o APK do painel Android
-make verify           # formatação + lint + testes + builds, sem instalar nada no sistema
+make setup
+make test
+make lint
+make verify
+make build-agent
+make build-apk
 ```
 
-## Instalação real
+Useful direct commands:
 
-- macOS (agente): [`docs/INSTALL-MACOS.md`](./docs/INSTALL-MACOS.md) — `scripts/install-macos.sh` / `scripts/uninstall-macos.sh`.
-- Android (painel): [`docs/INSTALL-ANDROID.md`](./docs/INSTALL-ANDROID.md) — `scripts/build-apk.sh`, instalação via ADB ou abrindo o `.apk` manualmente no aparelho.
+```bash
+cd apps/android-panel
+corepack pnpm test
+corepack pnpm build
 
-## Status
+cd ../mac-agent
+go test ./...
+go vet ./...
+```
 
-Veja [`docs/STATUS.md`](./docs/STATUS.md) para o estado atual do projeto por fase.
+To build the macOS package on macOS:
 
-## Segurança
+```bash
+scripts/build-macos-dmg.sh --version 0.1.1
+```
 
-Modelo de segurança resumido em [`docs/SECURITY.md`](./docs/SECURITY.md): pareamento por código temporário, token armazenado como hash no Mac e no Android Keystore no celular, nenhum shell arbitrário, sem exposição à internet pública no MVP. Acesso remoto futuro, se necessário, será só via Tailscale — nunca porta pública.
+## Repository layout
 
-## Licença
+```text
+apps/android-panel/       Android dashboard and QR scanner
+apps/mac-agent/           Go macOS agent
+configs/                  Example action catalog
+docs/                     Protocol, security and installation docs
+assets/                   Versioned project assets
+releases/                 Public APK/DMG release artifacts
+scripts/                  Build, install and packaging scripts
+```
 
-Projeto pessoal de Ricardo Pena. Sem licença de distribuição definida ainda.
+## Security model
+
+- Local-network operation by default.
+- Temporary pairing code and per-device token.
+- No arbitrary shell execution from Android.
+- The macOS configuration is authoritative for available actions.
+- Secrets and local device state stay outside version control.
+- Remote access is out of scope for the MVP; never expose port `38121` directly to the public Internet.
+
+Read [`docs/SECURITY.md`](./docs/SECURITY.md) and [`docs/PROTOCOL.md`](./docs/PROTOCOL.md) before changing the protocol or action executor.
+
+## Support
+
+For support, contact **+55 16 98259-0388**.
+
+## License
+
+No public license has been selected yet. Until a license is added, the repository is private and the code is not granted for redistribution.

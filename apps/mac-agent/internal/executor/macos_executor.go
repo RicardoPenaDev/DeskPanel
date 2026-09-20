@@ -41,8 +41,8 @@ func realRunCommand(ctx context.Context, name string, args ...string) commandRes
 }
 
 // MacOSExecutor runs actions for real via exec.CommandContext. Only the
-// action kinds listed in PROJECT.md §17 Fase 1 are implemented; the rest
-// report ACTION_NOT_ALLOWED until their phase.
+// action kinds listed in PROJECT.md §17 are implemented; every system
+// action remains fixed and never accepts commands or scripts from the client.
 type MacOSExecutor struct {
 	// run defaults to realRunCommand; tests override it.
 	run runCommandFunc
@@ -77,6 +77,12 @@ func (m *MacOSExecutor) Execute(ctx context.Context, action actions.Action) Resu
 		res = execMediaControl(ctx, run, action, "Spotify")
 	case actions.KindMusicControl:
 		res = execMediaControl(ctx, run, action, "Music")
+	case actions.KindDisplaySleep:
+		res = execDisplaySleep(ctx, run)
+	case actions.KindScreenLock:
+		res = execScreenLock(ctx, run)
+	case actions.KindKeystroke:
+		res = execKeystroke(ctx, run, action)
 	default:
 		res = Result{
 			Status:    "error",
@@ -89,6 +95,100 @@ func (m *MacOSExecutor) Execute(ctx context.Context, action actions.Action) Resu
 		res.DurationMs = time.Since(start).Milliseconds()
 	}
 	return res
+}
+
+func execDisplaySleep(ctx context.Context, run runCommandFunc) Result {
+	// Fixed macOS command; no arguments are accepted from the Android client.
+	out := run(ctx, "pmset", "displaysleepnow")
+	if out.err != nil {
+		return Result{Status: "error", ErrorCode: "ACTION_FAILED", Message: "não foi possível apagar o monitor"}
+	}
+	return Result{Status: "success"}
+}
+
+func execScreenLock(ctx context.Context, run runCommandFunc) Result {
+	// Standard macOS lock shortcut. Accessibility permission may be required.
+	const lockScript = `tell application "System Events" to keystroke "q" using {control down, command down}`
+	out := run(ctx, "osascript", "-e", lockScript)
+	if out.err != nil {
+		return Result{Status: "error", ErrorCode: "ACTION_FAILED", Message: "não foi possível bloquear o Mac"}
+	}
+	return Result{Status: "success"}
+}
+
+var allowedKeystrokeModifiers = map[string]string{
+	"cmd":     "command down",
+	"command": "command down",
+	"shift":   "shift down",
+	"option":  "option down",
+	"alt":     "option down",
+	"control": "control down",
+	"ctrl":    "control down",
+}
+
+// execKeystroke accepts only a small, explicit keyboard vocabulary. The
+// AppleScript is assembled from validated constants; neither the Android
+// client nor config.json can inject an arbitrary script or modifier.
+func execKeystroke(ctx context.Context, run runCommandFunc, action actions.Action) Result {
+	key, ok := stringParam(action, "key")
+	if !ok || !allowedKeystrokeKey(key) {
+		return Result{Status: "error", ErrorCode: "ACTION_NOT_ALLOWED", Message: "tecla não permitida"}
+	}
+
+	modifiers, ok := stringSliceParam(action, "modifiers")
+	if !ok {
+		return Result{Status: "error", ErrorCode: "ACTION_NOT_ALLOWED", Message: "modificadores inválidos"}
+	}
+
+	using := make([]string, 0, len(modifiers))
+	seen := make(map[string]bool, len(modifiers))
+	for _, modifier := range modifiers {
+		canonical, allowed := allowedKeystrokeModifiers[strings.ToLower(modifier)]
+		if !allowed || seen[canonical] {
+			return Result{Status: "error", ErrorCode: "ACTION_NOT_ALLOWED", Message: "modificador não permitido"}
+		}
+		seen[canonical] = true
+		using = append(using, canonical)
+	}
+
+	script := fmt.Sprintf("tell application \"System Events\" to keystroke \"%s\"", key)
+	if len(using) > 0 {
+		script += " using {" + strings.Join(using, ", ") + "}"
+	}
+	out := run(ctx, "osascript", "-e", script)
+	if out.err != nil {
+		return Result{Status: "error", ErrorCode: "ACTION_FAILED", Message: "não foi possível enviar o atalho de teclado"}
+	}
+	return Result{Status: "success"}
+}
+
+func stringSliceParam(action actions.Action, key string) ([]string, bool) {
+	raw, ok := action.Parameters[key]
+	if !ok {
+		return []string{}, true
+	}
+	values, ok := raw.([]any)
+	if !ok {
+		return nil, false
+	}
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		text, ok := value.(string)
+		if !ok || text == "" {
+			return nil, false
+		}
+		result = append(result, text)
+	}
+	return result, true
+}
+
+func allowedKeystrokeKey(key string) bool {
+	if len([]rune(key)) != 1 {
+		return false
+	}
+	r := []rune(key)[0]
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+		(r >= '0' && r <= '9') || strings.ContainsRune(" `-=[]\\;',./\t", r)
 }
 
 func stringParam(action actions.Action, key string) (string, bool) {

@@ -33,6 +33,8 @@ func main() {
 		err = cmdStatus(args)
 	case "doctor":
 		err = cmdDoctor(args)
+	case "setup":
+		err = cmdSetup(args)
 	case "version":
 		cmdVersion()
 	case "-h", "--help", "help":
@@ -59,6 +61,7 @@ Comandos:
   devices   lista dispositivos pareados (sem mostrar tokens)
   revoke    remove a autorização de um dispositivo
   status    informa porta, estado e conexões
-  doctor    verifica configuração, permissões, arquivos, porta e comandos do macOS
-  version   mostra a versão do agente e do protocolo`)
+	  doctor    verifica configuração, permissões, arquivos, porta e comandos do macOS
+	  setup     abre o assistente local de configuração no navegador
+	  version   mostra a versão do agente e do protocolo`)
 }

@@ -70,6 +70,114 @@ body {
   color: var(--dp-muted);
 }
 
+/* --- Aviso transitório de conexão ------------------------------------- */
+
+.dp-connection-notice {
+  position: fixed;
+  z-index: 100;
+  top: max(14px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 220px;
+  padding: 11px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(28, 31, 37, 0.92);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: var(--dp-text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: center;
+  animation: dp-notice-in 0.22s ease-out;
+}
+
+.dp-connection-notice__dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--dp-success);
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* Ao reconectar, o aviso entra como uma gota que cai e se abre em uma
+   pequena ondulação antes de revelar a mensagem. */
+.dp-connection-notice--online {
+  animation: dp-drop-open 0.58s cubic-bezier(0.22, 0.8, 0.28, 1) both;
+}
+
+.dp-connection-notice--online::after {
+  position: absolute;
+  inset: -4px;
+  border: 2px solid rgba(53, 195, 125, 0.5);
+  border-radius: inherit;
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  animation: dp-ripple 0.7s ease-out 0.28s both;
+}
+
+.dp-connection-notice--offline .dp-connection-notice__dot {
+  background: var(--dp-danger);
+}
+
+@keyframes dp-notice-in {
+  from { opacity: 0; transform: translate(-50%, -10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes dp-drop-open {
+  0% {
+    min-width: 18px;
+    padding-left: 5px;
+    padding-right: 5px;
+    border-radius: 50%;
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(0.35, 1.15);
+  }
+  35% {
+    min-width: 28px;
+    border-radius: 50%;
+    opacity: 1;
+    transform: translate(-50%, 3px) scale(1.05, 0.82);
+  }
+  62% {
+    min-width: 220px;
+    border-radius: 999px;
+    transform: translate(-50%, -2px) scale(1.02, 0.98);
+  }
+  100% {
+    min-width: 220px;
+    border-radius: 999px;
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes dp-ripple {
+  from {
+    opacity: 0.65;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-connection-notice,
+  .dp-connection-notice--online,
+  .dp-connection-notice--online::after {
+    animation: none;
+  }
+}
+
 /* --- Pareamento (PROJECT.md §10.2-A) ----------------------------------- */
 
 .dp-pairing-form {
@@ -147,6 +255,59 @@ body {
   color: var(--dp-danger);
 }
 
+.dp-qr-scanner {
+  position: relative;
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  background: #080a0d;
+  color: var(--dp-text);
+  text-align: center;
+}
+
+.dp-qr-scanner__viewport {
+  position: relative;
+  width: min(76vw, 420px);
+  height: min(76vw, 420px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.dp-qr-scanner__video {
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 24px;
+  object-fit: cover;
+  background: #000;
+}
+
+.dp-qr-scanner__guide {
+  position: absolute;
+  width: min(55vw, 280px);
+  height: min(55vw, 280px);
+  border: 3px solid var(--dp-accent);
+  border-radius: 20px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.24), 0 0 30px rgba(79, 140, 255, 0.45);
+  pointer-events: none;
+}
+
+.dp-qr-scanner button {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--dp-text);
+}
+
 /* --- Painel principal (PROJECT.md §10.2-B) ----------------------------- */
 
 .dp-dashboard {
@@ -176,6 +337,55 @@ body {
   display: grid;
   gap: 10px;
   min-height: 0;
+}
+
+/* A página de mídia/sistema usa uma leitura mais próxima do Apple Music:
+   controles em cápsulas translúcidas, com brilho suave e profundidade. */
+.dp-dashboard__grid--media .dp-button {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.035) 52%),
+    rgba(19, 23, 30, 0.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 8px 18px rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+  backdrop-filter: blur(14px) saturate(135%);
+}
+
+.dp-dashboard__grid--media .dp-button__icon {
+  width: 82%;
+  max-width: 168px;
+  filter: drop-shadow(0 3px 8px rgba(255, 255, 255, 0.18));
+}
+
+.dp-dashboard__grid--media .dp-button__label {
+  color: rgba(255, 255, 255, 0.82);
+  opacity: 0.78;
+}
+
+.dp-dashboard__grid--media .dp-button--pressed,
+.dp-dashboard__grid--media .dp-button--success {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(79, 140, 255, 0.16)),
+    rgba(31, 38, 52, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 0 22px rgba(79, 140, 255, 0.24);
+}
+
+/* O Moto G31 usa viewport paisagem de 2400 px e densidade alta. Manter o
+   bitmap um pouco menor reduz a interpolação do WebView e deixa os ícones
+   reais mais definidos; o botão/tamanho de toque continuam iguais. */
+@media (orientation: landscape) and (max-width: 2420px) {
+  .dp-button__icon,
+  .dp-dashboard__grid--media .dp-button__icon {
+    width: 68%;
+    /* 96 CSS px correspondem aproximadamente aos 256 px físicos dos
+       .icns de Chrome, WhatsApp e RustDesk no painel de 420 dpi. Acima
+       disso o WebView precisa ampliar o bitmap e a borda perde definição. */
+    max-width: 96px;
+  }
 }
 
 /* --- Folha de controles (status, página, Editar/Configurações) --------
@@ -321,9 +531,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
   font-size: 0.85rem;
-  padding: 8px;
+  padding: 4px;
   touch-action: manipulation;
   transition:
     transform 0.12s ease,
@@ -335,9 +545,13 @@ body {
    pequena e discreta — só um apoio, não o jeito principal de identificar
    o botão. */
 .dp-button__label {
-  font-size: 0.68rem;
+  /* O ícone é a identificação principal; o nome fica apenas como apoio
+     visual discreto para quem estiver perto do painel. */
+  font-size: 0.5rem;
   color: var(--dp-muted);
-  line-height: 1.15;
+  opacity: 0.72;
+  line-height: 1;
+  max-height: 0.55rem;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -378,6 +592,51 @@ body {
 .dp-button__error {
   font-size: 0.7rem;
   color: var(--dp-danger);
+}
+
+.dp-button__feedback {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  font-size: 1.55rem;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  animation: dp-feedback-pop 0.18s ease-out;
+}
+
+.dp-button__feedback--success {
+  color: #fff;
+  background: var(--dp-success);
+  box-shadow: 0 0 18px rgba(53, 195, 125, 0.7);
+}
+
+.dp-button__feedback--error {
+  position: static;
+  display: inline-grid;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 3px;
+  font-size: 0.75rem;
+  vertical-align: -1px;
+  color: #fff;
+  background: var(--dp-danger);
+}
+
+@keyframes dp-feedback-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 /* Cor de categoria (PROJECT.md §10.3): um traço fino embaixo do ícone em
@@ -485,6 +744,16 @@ body {
   font-size: 0.85rem;
 }
 
+.dp-editor__toolbar {
+  align-items: stretch;
+}
+
+.dp-editor__toolbar button {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}
+
 .dp-editor__reorder-toggle--active {
   border-color: var(--dp-accent);
   color: var(--dp-accent);
@@ -540,6 +809,21 @@ body {
   padding: 6px;
 }
 
+/* No editor, o ícone não deve ocupar o slot inteiro: o texto e o espaço de
+   toque precisam continuar legíveis também no modo retrato. */
+.dp-editor__slot-icon {
+  width: clamp(24px, 42%, 64px);
+  max-width: 64px;
+  min-width: 20px;
+}
+
+.dp-editor__slot > span:last-child {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Vazio precisa de uma borda de verdade — é a única pista de "toque para
    adicionar" num slot sem ícone nem label. */
 .dp-editor__slot--empty {
@@ -571,6 +855,17 @@ body {
   font-weight: 600;
 }
 
+.dp-editor__panel-header button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--dp-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .dp-editor__icon-grid,
 .dp-editor__color-grid {
   display: flex;
@@ -585,6 +880,50 @@ body {
   border: 1px solid #2a2f36;
   background: var(--dp-bg);
   color: var(--dp-text);
+}
+
+/* Switch Apple para o requisito de toque prolongado. O texto fica à
+   esquerda e o controle sempre alinhado à direita do painel. */
+.dp-editor .dp-field--checkbox {
+  width: 100%;
+  min-height: 52px;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  color: var(--dp-text);
+  font-size: 0.9rem;
+}
+
+.dp-editor .dp-field--checkbox input[type="checkbox"] {
+  width: 44px;
+  height: 26px;
+  min-width: 44px;
+  min-height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #50545d;
+  cursor: pointer;
+}
+
+.dp-editor .dp-field--checkbox input[type="checkbox"]::after {
+  width: 22px;
+  height: 22px;
+  margin: 2px;
+  transform: translateX(0);
+}
+
+.dp-editor .dp-field--checkbox input[type="checkbox"]:checked {
+  background: var(--dp-accent);
+}
+
+.dp-editor .dp-field--checkbox input[type="checkbox"]:checked::after {
+  transform: translateX(18px);
+}
+
+.dp-editor .dp-field--checkbox input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 0.65;
 }
 
 .dp-editor__icon-option--active {
@@ -637,7 +976,7 @@ body {
 .dp-button__icon,
 .dp-editor__slot-icon {
   color: inherit;
-  width: 62%;
+  width: 78%;
   height: auto;
   max-width: 156px;
   min-width: 30px;
@@ -711,13 +1050,276 @@ body {
   outline-offset: 1px;
 }
 
+/* Em retrato, a grade 4x2 original fica estreita demais. Mantemos as quatro
+   colunas em paisagem e usamos 2x4 em telas estreitas, com rolagem natural. */
+@media (max-aspect-ratio: 1/1) {
+  .dp-dashboard {
+    min-height: 100%;
+    overflow-y: auto;
+  }
+
+  .dp-dashboard__grid,
+  .dp-editor__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(4, minmax(72px, 1fr)) !important;
+    min-height: 320px;
+  }
+
+  .dp-dashboard__grid .dp-button__icon {
+    width: clamp(34px, 52%, 92px);
+  }
+
+  .dp-editor__slot {
+    min-height: 68px;
+  }
+}
+
+/* --- Ajustes e editor: visual de painel moderno, inspirado no iOS ------- */
+
+.dp-settings-screen {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+  background: linear-gradient(180deg, rgba(35, 39, 48, 0.38), transparent 220px);
+}
+
+.dp-settings-header,
+.dp-editor__header {
+  position: sticky;
+  top: -20px;
+  z-index: 2;
+  min-height: 64px;
+  margin: 0 0 8px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.035)),
+    rgba(21, 25, 32, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 28px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.dp-settings-header h1,
+.dp-editor__header h1 {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.dp-settings-header button,
+.dp-editor__header button {
+  min-height: 36px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--dp-accent);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.dp-settings-header button:active,
+.dp-editor__header button:active {
+  opacity: 0.65;
+}
+
+.dp-settings-section {
+  margin: 18px 0 24px;
+  padding: 0 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(28, 31, 37, 0.78);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.dp-settings-section h2 {
+  margin: 0 -16px;
+  padding: 14px 16px 9px;
+  color: var(--dp-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dp-settings-section .dp-field,
+.dp-settings-toggle {
+  min-height: 52px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.dp-settings-section input:not([type="checkbox"]),
+.dp-settings-section select {
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.dp-settings-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--dp-text);
+  font-size: 0.9rem;
+}
+
+.dp-settings-toggle input[type="checkbox"],
+.dp-field--checkbox input[type="checkbox"] {
+  appearance: none;
+  width: 44px;
+  height: 26px;
+  flex: 0 0 auto;
+  margin: 0 0 0 auto;
+  border: 0;
+  border-radius: 999px;
+  background: #50545d;
+  transition: background 0.18s ease;
+}
+
+.dp-settings-toggle input[type="checkbox"]::after,
+.dp-field--checkbox input[type="checkbox"]::after {
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 2px;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+  transition: transform 0.18s ease;
+}
+
+.dp-settings-toggle input[type="checkbox"]:checked,
+.dp-field--checkbox input[type="checkbox"]:checked {
+  background: var(--dp-accent);
+}
+
+.dp-settings-toggle input[type="checkbox"]:checked::after,
+.dp-field--checkbox input[type="checkbox"]:checked::after {
+  transform: translateX(18px);
+}
+
+.dp-settings-actions,
+.dp-editor__toolbar {
+  padding: 12px 0;
+}
+
+.dp-settings-section button,
+.dp-editor__toolbar button,
+.dp-editor__panel > button {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--dp-text);
+  font-weight: 600;
+}
+
+.dp-editor {
+  padding: 20px 24px 32px;
+  background: linear-gradient(180deg, rgba(35, 39, 48, 0.38), transparent 220px);
+}
+
+.dp-editor__pages {
+  padding: 10px 0;
+}
+
+.dp-editor__page-tab,
+.dp-editor__page-add {
+  min-height: 40px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.dp-editor__page-tab--active {
+  background: rgba(79, 140, 255, 0.2);
+  color: #fff;
+}
+
+.dp-editor__toolbar button {
+  border-radius: 12px;
+}
+
+.dp-editor__grid {
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(28, 31, 37, 0.62);
+}
+
+.dp-editor__panel,
+.dp-editor__confirm {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(28, 31, 37, 0.92);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
+}
+
+.dp-editor__icon-option {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Limite final do editor: esta regra vem depois da regra geral dos ícones do
+   painel e impede que PNGs reais do .icns cresçam além do slot. */
+.dp-editor__slot > .dp-editor__slot-icon {
+  width: min(42%, 64px) !important;
+  height: min(42%, 64px) !important;
+  min-width: 20px;
+  max-width: 64px;
+  max-height: 64px;
+  object-fit: contain;
+}
+
+.dp-editor__icon-option {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 9px;
+}
+
+.dp-editor__icon-option svg,
+.dp-editor__icon-option img {
+  width: 24px;
+  height: 24px;
+  max-width: 24px;
+  max-height: 24px;
+  object-fit: contain;
+}
+
+.dp-action-picker__list button {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dp-action-picker__list button > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* --- Ícone real do app (PNG do .icns, como na tela do iPhone) ---------- */
 
 .dp-icon-image {
-  object-fit: cover;
+  /* Ícones reais chegam em alta resolução do agente. Contain evita cortar
+     ou esticar a borda do .icns ao redimensionar no WebView do Android. */
+  object-fit: contain;
   flex-shrink: 0;
   border-radius: 22%;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .dp-action-picker__icon {

@@ -55,13 +55,6 @@
       "parameters": { "application": "Visual Studio Code" }
     },
     {
-      "id": "app.screenshot",
-      "label": "Captura de tela",
-      "icon": "camera",
-      "kind": "keystroke",
-      "parameters": { "key": "4", "modifiers": ["cmd", "shift"] }
-    },
-    {
       "id": "shortcut.work",
       "label": "Modo trabalho",
       "icon": "briefcase-business",
@@ -113,14 +106,14 @@
     {
       "id": "system.display_sleep",
       "label": "Apagar monitor",
-      "icon": "monitor-off",
+      "icon": "display-sleep",
       "kind": "display_sleep",
       "parameters": {}
     },
     {
       "id": "system.lock",
       "label": "Bloquear Mac",
-      "icon": "lock",
+      "icon": "shield-lock",
       "kind": "screen_lock",
       "parameters": {}
     }

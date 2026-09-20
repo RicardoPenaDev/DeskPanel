@@ -129,6 +129,11 @@ export default function DashboardButton({
       <Icon name={icon} src={iconUrl} className="dp-button__icon" />
       <span className="dp-button__label">{label}</span>
       {requireLongPress && state === "idle" && <span className="dp-button__hint">segure</span>}
+      {state === "success" && (
+        <span className="dp-button__feedback dp-button__feedback--success" role="status">
+          ✓
+        </span>
+      )}
       {state === "running" && (
         <span className="dp-button__spinner" role="status" aria-label="Executando">
           …
@@ -136,6 +141,9 @@ export default function DashboardButton({
       )}
       {state === "error" && errorMessage && (
         <span className="dp-button__error" role="alert">
+          <span className="dp-button__feedback dp-button__feedback--error" aria-hidden="true">
+            !
+          </span>
           {errorMessage}
         </span>
       )}

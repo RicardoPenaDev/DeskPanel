@@ -33,10 +33,13 @@ var defaultDirs = []string{
 
 const (
 	plutilPath   = "/usr/bin/plutil"
-	sipsPath     = "/usr/bin/sips"
+	iconutilPath = "/usr/bin/iconutil"
 	scanTimeout  = 3 * time.Second
 	iconTimeout  = 3 * time.Second
-	iconMaxSizeP = 128 // px, lado maior
+	// O painel pode ocupar quase toda a célula com o ícone. 128 px fica
+	// borrado em telas Android de alta densidade, como a AMOLED do Moto G31;
+	// 512 px permite reduzir no WebView sem ampliar um bitmap pequeno.
+	iconMaxSizeP = 512 // px, lado maior
 
 	// defaultScanCacheTTL evita rescanear ~100+ apps (um `plutil` por
 	// app) do zero a cada ícone pedido: o Android busca a lista de apps
@@ -263,31 +266,55 @@ func resolveIconPath(bundlePath string, p bundlePlist) string {
 	return ""
 }
 
-// convertIcon roda `sips` para converter um .icns em PNG, redimensionado
-// para caber num ícone de tela — nunca via shell, args sempre fixos ou
-// vindos do próprio disco do Mac.
+// convertIcon extrai o iconset do .icns e escolhe a maior representação PNG.
+// Isso evita que sips escolha a versão padrão de 128 px, que fica borrada ao
+// ampliar no Android. Nunca usa shell; os argumentos vêm do próprio disco.
 func convertIcon(icnsPath string) ([]byte, bool) {
 	dir, err := os.MkdirTemp("", "deskpanel-icon-*")
 	if err != nil {
 		return nil, false
 	}
 	defer os.RemoveAll(dir)
-	out := filepath.Join(dir, "icon.png")
+	iconset := filepath.Join(dir, "icon.iconset")
 
 	ctx, cancel := context.WithTimeout(context.Background(), iconTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, sipsPath,
-		"-s", "format", "png",
-		"-Z", strconv.Itoa(iconMaxSizeP),
-		icnsPath,
-		"--out", out,
-	)
+	cmd := exec.CommandContext(ctx, iconutilPath, "-c", "iconset", icnsPath, "-o", iconset)
 	if err := cmd.Run(); err != nil {
 		return nil, false
 	}
 
-	data, err := os.ReadFile(out)
+	entries, err := os.ReadDir(iconset)
+	if err != nil {
+		return nil, false
+	}
+	bestPath := ""
+	bestSize := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".png") {
+			continue
+		}
+		name := strings.TrimSuffix(entry.Name(), ".png")
+		name = strings.TrimSuffix(name, "@2x")
+		parts := strings.Split(name, "x")
+		if len(parts) != 2 {
+			continue
+		}
+		width, parseErr := strconv.Atoi(strings.TrimPrefix(parts[0], "icon_"))
+		score := width
+		if strings.HasSuffix(entry.Name(), "@2x.png") {
+			score *= 2
+		}
+		if parseErr == nil && score > bestSize {
+			bestSize = score
+			bestPath = filepath.Join(iconset, entry.Name())
+		}
+	}
+	if bestPath == "" {
+		return nil, false
+	}
+	data, err := os.ReadFile(bestPath)
 	if err != nil {
 		return nil, false
 	}

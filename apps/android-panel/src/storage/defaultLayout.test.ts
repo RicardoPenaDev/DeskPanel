@@ -12,7 +12,8 @@ describe("defaultDashboardConfig", () => {
     const allButtonIds = profile.pages.flatMap((page) => page.buttons.map((b) => b.id));
     expect(new Set(allButtonIds).size).toBe(allButtonIds.length);
 
-    for (const page of profile.pages) {
+    expect(profile.pages[0].buttons).toHaveLength(7);
+    for (const page of profile.pages.slice(1)) {
       expect(page.columns).toBe(4);
       expect(page.rows).toBe(2);
       expect(page.buttons).toHaveLength(8);

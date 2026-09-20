@@ -38,7 +38,7 @@ describe("DashboardScreen", () => {
       />,
     );
 
-    expect(within(grid()).getAllByRole("button")).toHaveLength(8);
+    expect(within(grid()).getAllByRole("button")).toHaveLength(7);
     expect(screen.getByText("MacBook de Ricardo")).toBeInTheDocument();
   });
 
@@ -56,7 +56,7 @@ describe("DashboardScreen", () => {
       />,
     );
 
-    expect(screen.getAllByText("indisponível")).toHaveLength(8);
+    expect(screen.getAllByText("indisponível")).toHaveLength(7);
   });
 
   it("chama executeAction com o actionId do botão pressionado", async () => {

@@ -17,6 +17,7 @@
     "@capacitor/core": "^6.2.0",
     "@capacitor/haptics": "^6",
     "@capacitor/preferences": "^6.0.3",
+    "@zxing/browser": "^0.1.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
