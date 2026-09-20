@@ -38,6 +38,12 @@ Download the artifacts from the GitHub Releases page. The repository also keeps 
 
 The macOS setup page is opened locally by `DeskPanel.app`. It shows the Mac's local addresses, port `38121`, and a **Generate code and QR Code** button. The generated code is temporary and is used by the Android QR scanner for pairing.
 
+![DeskPanel macOS setup](./docs/images/macos-setup.png)
+
+### DeskPanel on a phone stand
+
+![DeskPanel phone stand mockup](./docs/images/android-deskpanel-mockup.png)
+
 ## Quick start for users
 
 ### macOS
