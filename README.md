@@ -14,7 +14,9 @@ Communication uses HTTP and WebSocket on port `38121`. The MVP is local-network 
 
 ## Current release
 
-Release `v0.1.1` includes:
+Release `v0.1.2` includes the latest macOS installer. The Android APK remains available from `v0.1.1`.
+
+The `v0.1.1` baseline includes:
 
 - One-click macOS DMG installer.
 - `DeskPanel.app` installed in `/Applications` with a custom icon.
@@ -24,7 +26,7 @@ Release `v0.1.1` includes:
 - Customizable dashboard pages and Apple-inspired glass UI.
 - Safe predefined macOS actions such as opening apps, media controls and volume control.
 
-Download the artifacts from [`releases/v0.1.1`](./releases/v0.1.1) or the GitHub Releases page.
+Download the artifacts from the GitHub Releases page. The repository also keeps the original files in [`releases/v0.1.1`](./releases/v0.1.1).
 
 ## Screenshots
 
