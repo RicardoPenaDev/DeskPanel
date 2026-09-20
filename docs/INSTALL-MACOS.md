@@ -7,6 +7,24 @@
 3. The installer places **DeskPanel.app** in `/Applications` and starts the user LaunchAgent.
 4. Use the local setup page to generate a temporary pairing QR code.
 
+### First-launch security warning
+
+The current public build is not signed or notarized with an Apple Developer certificate. macOS may show a warning saying that Apple cannot verify the developer. This is expected for the free unsigned distribution:
+
+1. Open the DMG.
+2. Right-click **DeskPanel Installer.app**.
+3. Choose **Open**.
+4. Confirm **Open** in the warning dialog.
+
+If macOS still blocks it:
+
+1. Open **System Settings > Privacy & Security**.
+2. Scroll to the security message about DeskPanel.
+3. Click **Open Anyway**.
+4. Confirm the dialog.
+
+The installer is distributed through the private GitHub repository and release checksums are provided with each release. Review the source code and verify the SHA-256 checksum before installing if you need additional assurance.
+
 The installer preserves an existing configuration and paired devices. Local data is stored under:
 
 ```text

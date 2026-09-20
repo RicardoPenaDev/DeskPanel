@@ -56,6 +56,8 @@ The macOS setup page is opened locally by `DeskPanel.app`. It shows the Mac's lo
 
 macOS may ask for Accessibility or Automation permission for actions that control the system. Only grant permissions if you trust the installation and understand the action being enabled.
 
+Because the free public build is not Apple-signed or notarized yet, macOS may show a first-launch warning. Right-click **DeskPanel Installer.app**, choose **Open**, and confirm **Open**. If necessary, use **System Settings > Privacy & Security > Open Anyway**. See the complete [macOS installation guide](./docs/INSTALL-MACOS.md).
+
 ### Android
 
 1. Install `DeskPanel-0.1.1.apk` on the Android phone.
