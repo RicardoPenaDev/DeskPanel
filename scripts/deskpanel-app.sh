@@ -10,4 +10,15 @@ if [ ! -x "$AGENT" ]; then
   exit 1
 fi
 
-nohup "$AGENT" setup >"$LOG_DIR/setup.log" 2>&1 </dev/null &
+SETUP_LOG="$LOG_DIR/setup.log"
+: >"$SETUP_LOG"
+nohup "$AGENT" setup >"$SETUP_LOG" 2>&1 </dev/null &
+
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  SETUP_URL="$(sed -n 's/^Assistente local aberto em //p' "$SETUP_LOG" | tail -1)"
+  if [ -n "$SETUP_URL" ]; then
+    /usr/bin/open "$SETUP_URL" >/dev/null 2>&1 || true
+    break
+  fi
+  sleep 0.2
+done
