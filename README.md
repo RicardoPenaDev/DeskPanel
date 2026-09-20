@@ -26,6 +26,16 @@ Release `v0.1.1` includes:
 
 Download the artifacts from [`releases/v0.1.1`](./releases/v0.1.1) or the GitHub Releases page.
 
+## Screenshots
+
+### Android dashboard
+
+![DeskPanel Android dashboard](./docs/images/android-dashboard.png)
+
+### macOS setup flow
+
+The macOS setup page is opened locally by `DeskPanel.app`. It shows the Mac's local addresses, port `38121`, and a **Generate code and QR Code** button. The generated code is temporary and is used by the Android QR scanner for pairing.
+
 ## Quick start for users
 
 ### macOS
