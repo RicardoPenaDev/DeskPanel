@@ -14,9 +14,7 @@ Communication uses HTTP and WebSocket on port `38121`. The MVP is local-network 
 
 ## Current release
 
-Release `v0.1.2` includes the latest macOS installer. The Android APK remains available from `v0.1.1`.
-
-The `v0.1.1` baseline includes:
+Release `v0.0.1` is the initial public release and includes the macOS installer and Android APK.
 
 - One-click macOS DMG installer.
 - `DeskPanel.app` installed in `/Applications` with a custom icon.
@@ -26,7 +24,7 @@ The `v0.1.1` baseline includes:
 - Customizable dashboard pages and Apple-inspired glass UI.
 - Safe predefined macOS actions such as opening apps, media controls and volume control.
 
-Download the artifacts from the GitHub Releases page. The repository also keeps the original files in [`releases/v0.1.1`](./releases/v0.1.1).
+Download the artifacts from the [GitHub Releases page](https://github.com/RicardoPenaDev/DeskPanel/releases/tag/v0.0.1) or from [`releases/v0.0.1`](./releases/v0.0.1).
 
 ## Screenshots
 

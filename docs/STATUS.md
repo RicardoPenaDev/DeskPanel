@@ -6,12 +6,12 @@ Last updated: 2026-09-20
 
 - Android dashboard tested on a physical Moto G60.
 - macOS agent runs through a user LaunchAgent.
-- DMG `v0.1.1` installs the agent and `DeskPanel.app` in `/Applications`.
+- DMG `v0.0.1` installs the agent and `DeskPanel.app` in `/Applications`.
 - Local setup page generates a temporary QR pairing code.
 - Android QR scanner pairs successfully with the Mac.
 - Connection feedback, reconnection, rotation and editor UI are implemented.
 - Keyboard injection actions were removed because macOS Accessibility/TCC blocks them reliably in the packaged agent.
-- Release artifacts are stored in `releases/v0.1.1/`.
+- Release artifacts are stored in `releases/v0.0.1/`.
 
 ## Validation
 

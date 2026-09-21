@@ -30,11 +30,11 @@ Enable Developer options and USB debugging, connect the device, authorize the co
 
 ```bash
 adb devices
-adb install releases/v0.1.1/DeskPanel-0.1.1.apk
+adb install releases/v0.0.1/DeskPanel-0.0.1.apk
 ```
 
 To update an existing installation while preserving app data:
 
 ```bash
-adb install -r releases/v0.1.1/DeskPanel-0.1.1.apk
+adb install -r releases/v0.0.1/DeskPanel-0.0.1.apk
 ```
