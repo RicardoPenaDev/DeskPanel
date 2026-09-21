@@ -1,0 +1,1 @@
+d2aa8ea7713338898167cedd5b5c0baf979fa0066427b3e6fe369579eddc9b5e  releases/v0.1.5/DeskPanel-0.1.5.dmg
