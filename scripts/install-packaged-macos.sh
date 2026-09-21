@@ -18,6 +18,7 @@ mkdir -p "$CONFIG_DIR/bin" "$LOG_DIR" "$HOME/Library/LaunchAgents"
 chmod 700 "$CONFIG_DIR"
 cp "$PACKAGE_ROOT/bin/deskpanel-agent" "$INSTALLED_BINARY"
 chmod 755 "$INSTALLED_BINARY"
+/usr/bin/codesign --force --sign - "$INSTALLED_BINARY" >/dev/null
 if [ ! -f "$CONFIG_PATH" ]; then
   cp "$CONFIG_EXAMPLE" "$CONFIG_PATH"
   chmod 600 "$CONFIG_PATH"

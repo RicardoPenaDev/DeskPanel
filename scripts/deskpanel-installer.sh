@@ -19,6 +19,7 @@ if ! /usr/bin/ditto "$APPLICATIONS_APP" "/Applications/DeskPanel.app"; then
   dialog "O agente foi instalado, mas não foi possível copiar o DeskPanel para /Applications."
   exit 1
 fi
+/usr/bin/codesign --force --deep --sign - "/Applications/DeskPanel.app" >/dev/null
 
 dialog "DeskPanel instalado com sucesso. A página de configuração será aberta agora."
 mkdir -p "$HOME/Library/Logs/DeskPanel"
