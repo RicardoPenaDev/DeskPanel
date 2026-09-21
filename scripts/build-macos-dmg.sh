@@ -76,6 +76,7 @@ cat >"$INSTALLER_APP/Contents/Info.plist" <<PLIST_EOF
 <key>CFBundleVersion</key><string>$VERSION</string>
 </dict></plist>
 PLIST_EOF
+/usr/bin/codesign --force --deep --sign - "$INSTALLER_APP" >/dev/null
 mkdir -p "$(dirname "$OUTPUT_DMG")"
 rm -f "$OUTPUT_DMG"
 hdiutil create -volname "DeskPanel $VERSION" -srcfolder "$STAGING" -ov -format UDZO "$OUTPUT_DMG" >/dev/null
