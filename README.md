@@ -12,6 +12,8 @@ DeskPanel turns an Android phone into a customizable control panel for macOS, si
 
 Communication uses HTTP and WebSocket on port `38121`. The MVP is local-network only. The phone never sends arbitrary shell commands, AppleScript or URLs for execution; it sends only a preconfigured `actionId`.
 
+DeskPanel works entirely on your local network. The phone only sends approved action IDs, and the Mac agent validates them before executing anything.
+
 ## Current release
 
 Release `v0.0.1` is the initial public release and includes the macOS installer and Android APK.
@@ -46,7 +48,7 @@ The macOS setup page is opened locally by `DeskPanel.app`. It shows the Mac's lo
 
 ### macOS
 
-1. Download `DeskPanel-0.1.1.dmg`.
+1. Download `DeskPanel-0.0.1.dmg`.
 2. Open it and double-click `DeskPanel Installer.app`.
 3. The installer places `DeskPanel.app` in `/Applications` and starts the background agent.
 4. Open the setup page when prompted.
@@ -58,7 +60,7 @@ Because the free public build is not Apple-signed or notarized yet, macOS may sh
 
 ### Android
 
-1. Install `DeskPanel-0.1.1.apk` on the Android phone.
+1. Install `DeskPanel-0.0.1.apk` on the Android phone.
 2. Open DeskPanel and choose **Settings > Connect to Mac**.
 3. Tap **Scan QR Code** and scan the code shown by the Mac setup page.
 
@@ -96,7 +98,7 @@ go vet ./...
 To build the macOS package on macOS:
 
 ```bash
-scripts/build-macos-dmg.sh --version 0.1.1
+scripts/build-macos-dmg.sh --version 0.0.1
 ```
 
 ## Repository layout
@@ -124,8 +126,8 @@ Read [`docs/SECURITY.md`](./docs/SECURITY.md) and [`docs/PROTOCOL.md`](./docs/PR
 
 ## Support
 
-For support, contact **+55 16 98259-0388**.
+For support, bug reports and feature requests, use [GitHub Issues](https://github.com/RicardoPenaDev/DeskPanel/issues).
 
 ## License
 
-No public license has been selected yet. Until a license is added, the repository is private and the code is not granted for redistribution.
+DeskPanel is released under the [MIT License](./LICENSE).
