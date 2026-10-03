@@ -1,0 +1,1 @@
+36d9cacdf3ea8ad4c8af1b1ca4a80f247e483763801ae82d13fb28b5238f2b27  releases/v1.0.2/DeskPanel-1.0.2.apk
