@@ -34,6 +34,10 @@ Download the artifacts from the [GitHub Releases page](https://github.com/Ricard
 
 ![DeskPanel Android dashboard](./docs/images/android-dashboard.png)
 
+### Spotify player — landscape
+
+![DeskPanel Spotify player](./docs/screenshots/spotify-player-v1.0.1.png)
+
 ### macOS setup flow
 
 The macOS setup page is opened locally by `DeskPanel.app`. It shows the Mac's local addresses, port `38121`, and a **Generate code and QR Code** button. The generated code is temporary and is used by the Android QR scanner for pairing.
